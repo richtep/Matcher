@@ -6,6 +6,8 @@ namespace Matcher.Shared;
 public class Game : Entity
 {
     [Required]
+    public virtual string Name { get; set; }
+    [Required]
     public virtual User User { get; set; }
         
 }

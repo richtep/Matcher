@@ -1,10 +1,53 @@
 ﻿@page "/game"
 @using Matcher.Shared
+@using Matcher.Client.Services
+@using EntitySystem.Client.Services;
+
+@inject GroupService _groupService;
+@inject ItemService _itemService;
+@inject IRedirectService _redirectService;
+
 <PageTitle>Matcher</PageTitle>
 
+
+<h1>@game.Name</h1>
+
+@foreach(var group in fullGroups) 
+{
+    foreach(var item in group)
+    {
+        <label>@item.Value</label>
+    }
+    
+    <br />
+}
 
 
 @code
 {
-   
+    private List<Matcher.Shared.Group> groups;
+
+    private List<Matcher.Shared.Item> items;
+
+    private List<List<Matcher.Shared.Item>> fullGroups;
+
+
+
+    private Matcher.Shared.Game game = Index.CurrentGame;
+
+
+    private async Task GetFullGroups(Matcher.Shared.Game game) 
+    {
+        groups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
+
+
+        foreach(var group in groups)  
+        {
+            items = await _itemService.ListAsync(i => i.Group.Id == group.Id);
+
+            fullGroups.Add(items);
+        }
+    }
+
+
 }

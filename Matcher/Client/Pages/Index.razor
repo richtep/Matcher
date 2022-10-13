@@ -1,13 +1,47 @@
 ﻿@page "/"
 @using Matcher.Shared
-<PageTitle>Matcher</PageTitle>
+@using Matcher.Client.Services
+@using EntitySystem.Client.Services;
 
-<button @onclick="@StartGame">Start</button>
+@inject GameService _gameService;
+@inject IRedirectService _redirectService;
+
+<PageTitle>Game list</PageTitle>
+
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Author</th>
+    </tr>
+
+    @foreach(var game in games) 
+    {
+        <tr @onclick="() => StartGame(game)">
+            <td>@game.Name</td>
+            <td>@game.User.Nick</td>
+        </tr>
+    }
+
+</table>
+
+
 
 @code
 {
-    public void StartGame()
+    public static Matcher.Shared.Game CurrentGame;
+
+    private List<Matcher.Shared.Game> games;
+
+
+    protected override async Task OnParametersSetAsync()
     {
-        
+        games = await _gameService.ListAsync(); 
     }
+
+    private async Task StartGame(Matcher.Shared.Game game) 
+    {
+        CurrentGame = game;
+        await _redirectService.RedirectToAsync("/game");
+    }
+
 }
