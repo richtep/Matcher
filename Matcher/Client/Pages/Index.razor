@@ -8,6 +8,8 @@
 
 <PageTitle>Game list</PageTitle>
 
+<h1>Game list</h1>
+
 <table>
     <tr>
         <th>Name</th>
@@ -24,13 +26,20 @@
 
 </table>
 
-
+<button @onclick="ImportGame">Import new game</button>
 
 @code
 {
+    private const string filePath = @"c:\matcher\";
+
+    private const string fileName = "gameImport.txt";
+
+
     public static Matcher.Shared.Game CurrentGame;
 
     private List<Matcher.Shared.Game> games;
+
+    private List<string> lines;
 
 
     protected override async Task OnParametersSetAsync()
@@ -43,5 +52,31 @@
         CurrentGame = game;
         await _redirectService.RedirectToAsync("/game");
     }
+
+
+    private void ImportGame()
+    {
+        foreach (string line in System.IO.File.ReadLines(filePath + fileName))
+        {
+            lines.Add(line);
+        }
+
+        var gameCreated = new Matcher.Shared.Game { Name = fileName, User = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" } };
+
+        foreach (var line in lines) 
+        {
+            var items = line.Split(",");
+
+            var groupCreated = new Matcher.Shared.Group { Game = gameCreated };
+
+            foreach (var item in items) 
+            {
+                new Matcher.Shared.Item { Value = item, Group = groupCreated };
+            }
+
+        }
+
+    }
+
 
 }
