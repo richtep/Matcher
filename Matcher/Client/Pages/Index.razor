@@ -3,51 +3,44 @@
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 
-
 @inject GameService _gameService;
 @inject GroupService _groupService;
 @inject ItemService _itemService;
 @inject UserService _userService;
-
-
 @inject IRedirectService _redirectService;
 @inject HttpClient Http;
+@inject IAlertService _alertService;
 
 <PageTitle>Game list</PageTitle>
 
 <h1>Game list</h1>
 
-<table>
-    <tr>
-        <th>Name</th>
-        <th>Author</th>
-    </tr>
 
-    
-    @if(games != null )
-    {
-     @foreach(var game in games) 
-        {
-            <tr @onclick="() => StartGame(game)">
-                <td>@game.Name</td>
-                <td>@game.User.Nick</td>
-            </tr>
-        }
-    }
-   
+ @if(games != null )
+ {
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Author</th>
+        </tr>
 
-</table>
-
+         @foreach(var game in games) 
+            {
+                <tr @onclick="() => StartGame(game)">
+                    <td>@game.Name</td>
+                    <td>@game.User.Nick</td>
+                </tr>
+            }
+    </table>
+ }
 
 <button @onclick="@ImportGameAsync">Import new game</button>
 
 @code
 {
-
-    private const string filePath = "c:\\matcher\\";
+    private const string filePath = @"c:\matcher\";
 
     private const string fileName = "gameImport.txt";
-
 
     public static Game CurrentGame;
 
@@ -59,56 +52,47 @@
     protected override async Task OnParametersSetAsync()
     {
         games = await _gameService.ListAsync(); 
-
-
     }
 
     private async Task StartGame(Game game) 
     {
         CurrentGame = game;
-        await _redirectService.RedirectToAsync("/game");
+        await _redirectService.RedirectToAsync("/current-game");
     }
-
 
     private async Task ImportGameAsync()
     {
-        var content = await Http.GetStringAsync(fileName);
-
-        lines = (content.Split(new string[] {Environment.NewLine}, StringSplitOptions.None)).ToList();
-
-        var userCreated = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" };
-        userCreated = await _userService.PutAsync(userCreated);
-
-       // userCreated = (await _userService.ListAsync(u => u == userCreated)).FirstOrDefault();
-
-
-        //var gameCreated = new Matcher.Shared.Game { Name = fileName, User = userCreated };
-        var gameCreated = new Game { Name = fileName, User = userCreated };
-        gameCreated = await _gameService.PutAsync(gameCreated);
-        
-        foreach (var line in lines) 
+        try
         {
-            var items = line.Split(",");
+            var content = await Http.GetStringAsync(fileName);
 
-            var groupCreated = new Matcher.Shared.Group { Game = gameCreated };
-            groupCreated = await _groupService.PutAsync(groupCreated);
+            lines = (content.Split(new string[] { Environment.NewLine }, StringSplitOptions.None)).ToList();
 
+            var userCreated = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" };
+            userCreated = await _userService.PutAsync(userCreated);
 
-            foreach (var item in items) 
+            var gameCreated = new Game { Name = fileName, User = userCreated };
+            gameCreated = await _gameService.PutAsync(gameCreated);
+
+            foreach (var line in lines)
             {
-                var itemCreated = new Matcher.Shared.Item { Value = item, Group = groupCreated };
-                itemCreated = await _itemService.PutAsync(itemCreated);
+                var items = line.Split(",");
+
+                var groupCreated = new Matcher.Shared.Group { Game = gameCreated };
+                groupCreated = await _groupService.PutAsync(groupCreated);
+
+                foreach (var item in items)
+                {
+                    var itemCreated = new Matcher.Shared.Item { Value = item, Group = groupCreated };
+                    itemCreated = await _itemService.PutAsync(itemCreated);
+                }
             }
-
         }
-
-        
-
-        
-
-
-
+        catch (Exception)
+        {
+            throw;
+        }
+               
+        _alertService.Add(AlertType.Success, "Game was successfully imported.");
     }
-
-    
 }

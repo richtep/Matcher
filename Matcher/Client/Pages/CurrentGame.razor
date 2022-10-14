@@ -15,29 +15,30 @@
 {
     foreach(var item in group)
     {
-        <label>@item.Value</label>
+        <label>@item.Value | </label>
     }
     <br />
 }
 
-
 @code
 {
-    private List<Group> groups;
+    private List<Group> groups = new();
 
-    private List<Item> items;
+    private List<Item> items = new();
 
-    private List<List<Item>> fullGroups;
-
-
+    private List<List<Item>> fullGroups = new();
 
     private Game game = Index.CurrentGame;
 
 
-    private async Task GetFullGroups(Matcher.Shared.Game game) 
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetFullGroupsAsync(game);
+    }
+        
+    private async Task GetFullGroupsAsync(Game game) 
     {
         groups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
-
 
         foreach(var group in groups)  
         {
