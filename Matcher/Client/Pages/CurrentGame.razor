@@ -1,6 +1,6 @@
-﻿@page "/game"
-@using Matcher.Shared
-@using Matcher.Client.Services
+﻿@page "/current-game";
+@using Matcher.Shared;
+@using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 
 @inject GroupService _groupService;
@@ -8,7 +8,6 @@
 @inject IRedirectService _redirectService;
 
 <PageTitle>Matcher</PageTitle>
-
 
 <h1>@game.Name</h1>
 
@@ -18,22 +17,21 @@
     {
         <label>@item.Value</label>
     }
-    
     <br />
 }
 
 
 @code
 {
-    private List<Matcher.Shared.Group> groups;
+    private List<Group> groups;
 
-    private List<Matcher.Shared.Item> items;
+    private List<Item> items;
 
-    private List<List<Matcher.Shared.Item>> fullGroups;
+    private List<List<Item>> fullGroups;
 
 
 
-    private Matcher.Shared.Game game = Index.CurrentGame;
+    private Game game = Index.CurrentGame;
 
 
     private async Task GetFullGroups(Matcher.Shared.Game game) 

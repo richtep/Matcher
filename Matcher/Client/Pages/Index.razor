@@ -1,10 +1,17 @@
 ﻿@page "/"
-@using Matcher.Shared
-@using Matcher.Client.Services
+@using Matcher.Shared;
+@using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 
+
 @inject GameService _gameService;
+@inject GroupService _groupService;
+@inject ItemService _itemService;
+@inject UserService _userService;
+
+
 @inject IRedirectService _redirectService;
+@inject HttpClient Http;
 
 <PageTitle>Game list</PageTitle>
 
@@ -16,26 +23,33 @@
         <th>Author</th>
     </tr>
 
-    @foreach(var game in games) 
+    
+    @if(games != null )
     {
-        <tr @onclick="() => StartGame(game)">
-            <td>@game.Name</td>
-            <td>@game.User.Nick</td>
-        </tr>
+     @foreach(var game in games) 
+        {
+            <tr @onclick="() => StartGame(game)">
+                <td>@game.Name</td>
+                <td>@game.User.Nick</td>
+            </tr>
+        }
     }
+   
 
 </table>
 
-<button @onclick="ImportGame">Import new game</button>
+
+<button @onclick="@ImportGameAsync">Import new game</button>
 
 @code
 {
-    private const string filePath = @"c:\matcher\";
+    
+    private const string filePath = "c:\\matcher\\";
 
     private const string fileName = "gameImport.txt";
 
 
-    public static Matcher.Shared.Game CurrentGame;
+    public static Game CurrentGame;
 
     private List<Matcher.Shared.Game> games;
 
@@ -45,38 +59,62 @@
     protected override async Task OnParametersSetAsync()
     {
         games = await _gameService.ListAsync(); 
+
+
     }
 
-    private async Task StartGame(Matcher.Shared.Game game) 
+    private async Task StartGame(Game game) 
     {
         CurrentGame = game;
         await _redirectService.RedirectToAsync("/game");
     }
 
 
-    private void ImportGame()
+    private async Task ImportGameAsync()
     {
-        foreach (string line in System.IO.File.ReadLines(filePath + fileName))
-        {
+        var content = await Http.GetStringAsync(fileName);
+
+        lines = (content.Split(new string[] {Environment.NewLine}, StringSplitOptions.None)).ToList();
+
+        /*
+        * 
+        foreach (string line in System.IO.File.ReadLines(path))
+            {
             lines.Add(line);
         }
+       */
 
-        var gameCreated = new Matcher.Shared.Game { Name = fileName, User = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" } };
+        var userCreated = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" };
+        await _userService.PutAsync(userCreated);
 
+
+        //var gameCreated = new Matcher.Shared.Game { Name = fileName, User = userCreated };
+        var gameCreated = new Game { Name = fileName, User = userCreated };
+        await _gameService.PutAsync(gameCreated);
+        
         foreach (var line in lines) 
         {
             var items = line.Split(",");
 
             var groupCreated = new Matcher.Shared.Group { Game = gameCreated };
+            await _groupService.PutAsync(groupCreated);
+
 
             foreach (var item in items) 
             {
-                new Matcher.Shared.Item { Value = item, Group = groupCreated };
+                var itemCreated = new Matcher.Shared.Item { Value = item, Group = groupCreated };
+                await _itemService.PutAsync(itemCreated);
             }
 
         }
 
+        
+
+        
+
+
+
     }
 
-
+    
 }

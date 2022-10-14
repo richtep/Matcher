@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Matcher.Server.Controllers;
 
-[Route("/api/user")]
-public class UserController : EntityController<UserService, User>
+[Route("/api/game")]
+public class GameController : EntityController<GameService, Game>
 {
-    public UserController(UserService entityService) : base(entityService)
+    public GameController(GameService entityService) : base(entityService)
     {
     }
 }
