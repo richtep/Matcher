@@ -15,38 +15,105 @@
 {
     foreach(var item in group)
     {
-        <label>@item.Value | </label>
+
+        if (itemStatus[item.Id] == 2) continue;
+        
+        switch (itemStatus[item.Id])
+
+        {
+            case 0:
+                bgcolor = "00f";
+                break;
+
+            case 1:
+                bgcolor = "fd7";
+                break;
+        }
+
+        <button style="background-color:bgcolor" id=@item.Id @onclick="() => SetItemStatus(item.Id)">@item.Value</button>
+
+        //if (itemStatus[item.Id]) bgcolor = "#fd7"; else bgcolor = "00f";
+
+        @*<button style="background-color:@bgcolor" id=@item.Id @onclick="() => SetItemStatus(item.Id)">@item.Value</button>*@
     }
     <br />
 }
 
 @code
 {
+
+    private Dictionary<long, int> itemStatus = new();
+
     private List<Group> groups = new();
 
-    private List<Item> items = new();
+    private List<Item> gameItems = new();
 
     private List<List<Item>> fullGroups = new();
 
     private Game game = Index.CurrentGame;
 
+    private string bgcolor;
+
 
     protected override async Task OnParametersSetAsync()
     {
+        groups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
+
+        gameItems = await _itemService.ListAsync(i => groups.Contains(i.Group));
+
+
+
+
         await GetFullGroupsAsync(game);
     }
-        
+
     private async Task GetFullGroupsAsync(Game game) 
     {
-        groups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
+
 
         foreach(var group in groups)  
         {
-            items = await _itemService.ListAsync(i => i.Group.Id == group.Id);
+            var itemsInRow = await _itemService.ListAsync(i => i.Group.Id == group.Id);
 
-            fullGroups.Add(items);
+
+            foreach (var item in itemsInRow)
+            {
+                itemStatus.Add(item.Id, 0);
+            }
+
+            fullGroups.Add(itemsInRow);
         }
     }
 
 
+
+    void SetItemStatus(long itemId)
+    {
+        if (itemStatus[itemId] == 0) itemStatus[itemId] = 1;
+        if (itemStatus[itemId] == 1) itemStatus[itemId] = 0;
+
+
+        CheckGroupIsCompleted();
+
+        StateHasChanged();  
+    }
+
+
+    private bool CheckGroupIsCompleted()
+    {
+        var selectedItemIds = itemStatus.Where(s => s.Value == 1).Select(s => s.Key);
+
+        var selectedItems = gameItems.Where(i => selectedItemIds.Any(si => si == i.Id));
+
+        var firstGroupId = selectedItems.FirstOrDefault().Group.Id;
+
+        if (selectedItems.All(si => si.Group.Id == firstGroupId))
+        {
+            itemStatus.Where(s => s.Value == 1).ForEach(s => s.Value = 2 );
+
+            return true;
+        }
+        
+        else return false;
+    }
 }
