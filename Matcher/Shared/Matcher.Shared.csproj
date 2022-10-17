@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EntitySystem.Shared.Files" Version="0.1.1" />
     <PackageReference Include="EntitySystem.Shared.Fluent" Version="0.1.1" />
   </ItemGroup>
 
