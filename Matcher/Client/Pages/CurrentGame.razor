@@ -24,7 +24,6 @@
     if (item.Status == 2) 
     {
         <button style="margin:5px;" class="btn btn-success" id=@item.Id>@item.Value</button>
-        @*<span>&nbsp;</span>*@
     }
 
     previousGroupId = item.Group.Id;
@@ -51,9 +50,7 @@
                     break;
             }
 
-        
         <button style="margin:5px;" class="@buttonclass" id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>
-        @*<span>&nbsp;</span>*@
     }
 
 
@@ -69,13 +66,11 @@
 
     private List<ItemStatus> gameStatusItems = new();
 
-    private List<ItemStatus> gameStatusItemsMixed =new();
+    private List<ItemStatus> gameStatusItemsMixed = new();
 
     private string buttonclass { get; set; }
 
     private Game game = Index.CurrentGame;
-
-    private string bgcolor;
 
 
     protected override async Task OnParametersSetAsync()
@@ -98,6 +93,7 @@
                     Value = item.Value,
                     Status = 0
                 };
+
             gameStatusItems.Add(itemStatus);
         }
 
@@ -108,7 +104,7 @@
     {
         SetItemStatus(item);
 
-        CheckGroupIsCompleted();
+        RemoveCompletedItems();
 
         StateHasChanged();
     }
@@ -130,17 +126,15 @@
         }
     }
 
-    private bool CheckGroupIsCompleted()
+    private void RemoveCompletedItems()
     {
         var selectedItems = gameStatusItems.Where(s => s.Status == 1).ToList();
 
-        if (selectedItems.Count < 1) return false;
+        if (selectedItems.Count < 1) return; 
 
         var firstGroupId = selectedItems.FirstOrDefault().Group.Id;
 
         var itemsInSelectedGroup = gameStatusItems.Where(s => s.Group.Id == firstGroupId).ToList();
-
-        
         
         if ( (itemsInSelectedGroup.All(isg => isg.Status == 1)) && 
              (selectedItems.All(si => si.Group.Id == firstGroupId)) )
@@ -149,11 +143,7 @@
             {
                 item.Status = 2;
             }
-
-            return true;
         }
-        
-        else return false;
     }
 
     private void MixItems()
