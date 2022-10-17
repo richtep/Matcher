@@ -11,44 +11,57 @@
 
 <h1>@game.Name</h1>
 
-@foreach(var group in fullGroups) 
-{
-    foreach(var item in group)
+@foreach (var item in gameStatusItems)
     {
+        switch (item.Status)
+            {
+                case 0:
+                    //bgcolor = "00f";
+                    buttonclass = "btn btn-secondary";
+                    break;
 
-        if (itemStatus[item.Id] == 2) continue;
-        
-        switch (itemStatus[item.Id])
+                case 1:
+                    //bgcolor = "fd7";
+                    buttonclass = "btn btn-primary"; 
+                    break;
 
-        {
-            case 0:
-                bgcolor = "00f";
-                break;
+                case 2:
+                    buttonclass = "btn btn-success";
+                    //continue;
+            break;
+                
+                default:
+                    
+                    break;
+            }
 
-            case 1:
-                bgcolor = "fd7";
-                break;
-        }
+        @*<button style="background-color:@bgcolor" id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>*@
 
-        <button style="background-color:bgcolor" id=@item.Id @onclick="() => SetItemStatus(item.Id)">@item.Value</button>
+        <button class="@buttonclass"  id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>
+        &nbsp;
 
-        //if (itemStatus[item.Id]) bgcolor = "#fd7"; else bgcolor = "00f";
-
-        @*<button style="background-color:@bgcolor" id=@item.Id @onclick="() => SetItemStatus(item.Id)">@item.Value</button>*@
+       
     }
-    <br />
-}
+
+    
+
+
 
 @code
 {
 
-    private Dictionary<long, int> itemStatus = new();
+    private static Random random = new Random();
 
-    private List<Group> groups = new();
+    private List<Group> gameGroups = new();
 
     private List<Item> gameItems = new();
 
-    private List<List<Item>> fullGroups = new();
+
+    private List<ItemStatus> gameStatusItems = new();
+
+
+    private string buttonclass { get; set; } //= "btn btn-primary";
+
 
     private Game game = Index.CurrentGame;
 
@@ -57,63 +70,92 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        groups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
-
-        gameItems = await _itemService.ListAsync(i => groups.Contains(i.Group));
+        gameGroups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
 
 
-
-
-        await GetFullGroupsAsync(game);
-    }
-
-    private async Task GetFullGroupsAsync(Game game) 
-    {
-
-
-        foreach(var group in groups)  
+        foreach (var gameGroup in gameGroups) 
         {
-            var itemsInRow = await _itemService.ListAsync(i => i.Group.Id == group.Id);
 
+            var gameItemsInGroup = await _itemService.ListAsync(i => i.Group.Id == gameGroup.Id);
 
-            foreach (var item in itemsInRow)
-            {
-                itemStatus.Add(item.Id, 0);
-            }
-
-            fullGroups.Add(itemsInRow);
+            gameItems = gameItemsInGroup.Concat(gameItems).ToList();
         }
+
+
+        foreach (var item in gameItems) 
+        {
+            var itemStatus = new ItemStatus
+                {
+                    Id = item.Id,
+                    Group = item.Group,
+                    Value = item.Value,
+                    Status = 0
+                };
+
+            gameStatusItems.Add(itemStatus);
+        }
+
+        MixItems();
+
     }
 
-
-
-    void SetItemStatus(long itemId)
+    void OnItemClick(ItemStatus item)
     {
-        if (itemStatus[itemId] == 0) itemStatus[itemId] = 1;
-        if (itemStatus[itemId] == 1) itemStatus[itemId] = 0;
-
+        SetItemStatus(item);
 
         CheckGroupIsCompleted();
 
-        StateHasChanged();  
+        StateHasChanged();
     }
 
+    void SetItemStatus(ItemStatus item)
+    {
+        switch (item.Status)
+        {
+            case 0:
+                gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 1;
+                break;
+
+            case 1:
+                gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 0;
+                break;
+
+            default:
+                break;
+        }
+    }
 
     private bool CheckGroupIsCompleted()
     {
-        var selectedItemIds = itemStatus.Where(s => s.Value == 1).Select(s => s.Key);
+        var selectedItems = gameStatusItems.Where(s => s.Status == 1).ToList();
 
-        var selectedItems = gameItems.Where(i => selectedItemIds.Any(si => si == i.Id));
+        if (selectedItems.Count < 1) return false;
 
         var firstGroupId = selectedItems.FirstOrDefault().Group.Id;
 
-        if (selectedItems.All(si => si.Group.Id == firstGroupId))
+        var itemsInSelectedGroup = gameStatusItems.Where(s => s.Group.Id == firstGroupId).ToList();
+
+        
+        
+        if ( (itemsInSelectedGroup.All(isg => isg.Status == 1)) && 
+             (selectedItems.All(si => si.Group.Id == firstGroupId)) )
         {
-            itemStatus.Where(s => s.Value == 1).ForEach(s => s.Value = 2 );
+            foreach (var item in selectedItems)
+            {
+                item.Status = 2;
+            }
 
             return true;
         }
         
         else return false;
     }
+
+    private void MixItems()
+    {
+        gameStatusItems = gameStatusItems.OrderBy(a => random.Next()).ToList();
+
+    }
+   // var shuffledcards = cards.OrderBy(a => rng.Next()).ToList();
+
 }

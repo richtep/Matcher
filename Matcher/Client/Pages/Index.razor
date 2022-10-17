@@ -78,12 +78,12 @@
             {
                 var items = line.Split(",");
 
-                var groupCreated = new Matcher.Shared.Group { Game = gameCreated };
+                var groupCreated = new Group { Game = gameCreated };
                 groupCreated = await _groupService.PutAsync(groupCreated);
 
                 foreach (var item in items)
                 {
-                    var itemCreated = new Matcher.Shared.Item { Value = item, Group = groupCreated };
+                    var itemCreated = new Item { Value = item, Group = groupCreated };
                     itemCreated = await _itemService.PutAsync(itemCreated);
                 }
             }

@@ -10,7 +10,4 @@ public class Item : Entity
     
     [Required]
     public virtual string Value { get; set; }
-
-
-    public virtual bool Selected { get; set; }
 }

@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matcher.Server", "Matcher\Server\Matcher.Server.csproj", "{6508AD91-B570-4533-9054-078164E1E598}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Matcher.Server", "Matcher\Server\Matcher.Server.csproj", "{6508AD91-B570-4533-9054-078164E1E598}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matcher.Client", "Matcher\Client\Matcher.Client.csproj", "{4641015F-C405-42CB-87F1-F1A101801C08}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Matcher.Client", "Matcher\Client\Matcher.Client.csproj", "{4641015F-C405-42CB-87F1-F1A101801C08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Matcher.Shared", "Matcher\Shared\Matcher.Shared.csproj", "{331E36F3-EC11-444F-8AB1-8EE726E304B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Matcher.Shared", "Matcher\Shared\Matcher.Shared.csproj", "{331E36F3-EC11-444F-8AB1-8EE726E304B2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
