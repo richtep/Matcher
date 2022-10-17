@@ -11,7 +11,27 @@
 
 <h1>@game.Name</h1>
 
-@foreach (var item in gameStatusItems)
+
+@{previousGroupId=0;}
+
+@foreach (var item in gameStatusItems) 
+{
+    if (previousGroupId != item.Group.Id && previousGroupId != 0) 
+    {
+        <br />
+    }
+
+    if (item.Status == 2) 
+    {
+        <button style="margin:5px;" class="btn btn-success" id=@item.Id>@item.Value</button>
+        @*<span>&nbsp;</span>*@
+    }
+
+    previousGroupId = item.Group.Id;
+}
+
+<hr />
+@foreach (var item in gameStatusItemsMixed)
     {
         switch (item.Status)
             {
@@ -25,20 +45,22 @@
 
                 case 2:
                     buttonclass = "btn btn-success";
-                    //continue;
-            break;
+                    continue;
                 
                 default:
                     break;
             }
 
-        <button class="@buttonclass"  id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>
-        <span>&nbsp;</span>
+        
+        <button style="margin:5px;" class="@buttonclass" id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>
+        @*<span>&nbsp;</span>*@
     }
 
 
 @code
 {
+    private long previousGroupId;
+
     private static Random random = new Random();
 
     private List<Group> gameGroups = new();
@@ -46,6 +68,8 @@
     private List<Item> gameItems = new();
 
     private List<ItemStatus> gameStatusItems = new();
+
+    private List<ItemStatus> gameStatusItemsMixed =new();
 
     private string buttonclass { get; set; }
 
@@ -134,6 +158,6 @@
 
     private void MixItems()
     {
-        gameStatusItems = gameStatusItems.OrderBy(a => random.Next()).ToList();
+        gameStatusItemsMixed = gameStatusItems.OrderBy(a => random.Next()).ToList();
     }
 }
