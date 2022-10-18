@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EntitySystem.Server.Files" Version="0.1.1" />
     <PackageReference Include="EntitySystem.Server.Fluent" Version="0.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.10" />
   </ItemGroup>
