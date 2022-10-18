@@ -62,6 +62,9 @@
 
     private async Task ImportGameAsync()
     {
+
+        await _redirectService.RedirectToAsync("/import-game");
+
         try
         {
             var content = await Http.GetStringAsync(fileName);

@@ -1,0 +1,89 @@
+﻿@page "/import-game"
+
+@using EntitySystem.Client.Services
+
+@using Matcher.Client.Services;
+@using Matcher.Shared;
+
+
+
+
+
+@inject HttpClient Http;
+@inject GameService _gameService;
+@inject GroupService _groupService;
+@inject ItemService _itemService;
+@inject UserService _userService;
+@inject IRedirectService _redirectService;
+@inject IAlertService _alertService;
+
+
+
+<PageTitle>Import game</PageTitle>
+
+<h1>Import game file</h1>
+
+<InputFile OnChange="@LoadFiles"/>
+
+
+@code 
+{
+
+    protected override void OnParametersSet()
+    {
+        
+
+    }
+        
+
+    private async Task LoadFiles(InputFileChangeEventArgs e) 
+    {
+        
+    try
+        {
+            var content = await new StreamReader(e.File.OpenReadStream()).ReadToEndAsync();
+            
+            var lines = (content.Split(new string[] { Environment.NewLine }, StringSplitOptions.None)).ToList();
+
+            var userCreated = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" };
+            userCreated = await _userService.PutAsync(userCreated);
+
+            var gameCreated = new Game { Name = e.File.Name, User = userCreated };
+            gameCreated = await _gameService.PutAsync(gameCreated);
+
+            foreach (var line in lines)
+            {
+                var items = line.Split(",");
+
+                var groupCreated = new Group { Game = gameCreated };
+                groupCreated = await _groupService.PutAsync(groupCreated);
+
+                foreach (var item in items)
+                {
+                    var itemCreated = new Item { Value = item, Group = groupCreated };
+                    itemCreated = await _itemService.PutAsync(itemCreated);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+
+        _alertService.Add(AlertType.Success, "Game was successfully imported.");
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+ 
