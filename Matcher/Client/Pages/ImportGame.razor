@@ -1,6 +1,5 @@
 ﻿@page "/import-game"
 @using EntitySystem.Client.Services
-@using Matcher.Shared;
 @using Matcher.Client.Services;
 @using Matcher.Shared.Domain
 @using Matcher.Shared.Models
@@ -16,11 +15,7 @@
 
 <h1>Import game file</h1>
 
-
-<InputFile OnChange="@LoadFiles"/>
-
-<EditForm autocomplete="on" Model="@SignUpModel"
-                                            OnValidSubmit="@LoadFiles()">
+<EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
                                             <DataAnnotationsValidator />
                                             <div class="mt-2">
                                                 <ValidationSummary />
@@ -35,72 +30,85 @@
                                             <div class="mb-3">
                                                 <label class="form-label" for="card-email">Email address</label>
                                                 <input class="form-control" type="email" autocomplete="on"
-                                                    id="card-email" @bind-value="SignUpModel.Email" />
+                                                       id="card-email" @bind-value="SignUpModel.Email" />
                                             </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Import file</label>
+                                                <InputFile OnChange="@LoadFiles"/>
+                                            </div>
+                                            
+                                            
+
+                                            @*
                                             <div class="row gx-2">
                                                 <div class="mb-3 col-sm-6">
                                                     <label class="form-label" for="card-password">Password</label>
                                                     <input class="form-control" type="password" autocomplete="on"
                                                         id="card-password"
-                                                        @bind-value="FreelanceSignUpModel.Password" />
+                                                        @bind-value="SignUpModel.Password" />
                                                 </div>
                                                 <div class="mb-3 col-sm-6">
                                                     <label class="form-label" for="card-confirm-password">Confirm
                                                         Password</label>
                                                     <input class="form-control" type="password" autocomplete="on"
                                                         id="card-confirm-password"
-                                                        @bind-value="FreelanceSignUpModel.Confirm" />
+                                                        @bind-value="SignUpModel.Confirm" />
                                                 </div>
                                             </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox"
-                                                    id="card-register-checkbox" @bind="ConsentIsChecked" />
-                                                <label class="form-label" for="card-register-checkbox">I accept the <a
-                                                        href="#!">terms </a>and <a href="#!">privacy policy</a></label>
-                                            </div>
+                                            *@
+                                            
                                             <div class="mb-3">
                                                 <button class="btn btn-primary d-block w-100 mt-3" type="submit"
-                                                    name="submit" disabled="@(!ConsentIsChecked)">Register</button>
+                                                    name="submit" @*disabled="@(!ConsentIsChecked)"*@>Register</button>
                                             </div>
                                         </EditForm>
 
 
 @code 
 {
+    [Parameter]
+    public SignUpModel SignUpModel { get; set; } = new();
+
+
     private async Task LoadFiles(InputFileChangeEventArgs e) 
     {
-        
         try
+        {
+            var content = await new StreamReader(e.File.OpenReadStream()).ReadToEndAsync();
+
+            var lines = (content.Split(new string[] { Environment.NewLine }, StringSplitOptions.None)).ToList();
+
+            var userCreated = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" };
+            userCreated = await _userService.PutAsync(userCreated);
+
+            var gameCreated = new Game { Name = e.File.Name, User = userCreated };
+            gameCreated = await _gameService.PutAsync(gameCreated);
+
+            foreach (var line in lines)
             {
-                var content = await new StreamReader(e.File.OpenReadStream()).ReadToEndAsync();
-            
-                var lines = (content.Split(new string[] { Environment.NewLine }, StringSplitOptions.None)).ToList();
+                var items = line.Split(",");
 
-                var userCreated = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" };
-                userCreated = await _userService.PutAsync(userCreated);
+                var groupCreated = new Group { Game = gameCreated };
+                groupCreated = await _groupService.PutAsync(groupCreated);
 
-                var gameCreated = new Game { Name = e.File.Name, User = userCreated };
-                gameCreated = await _gameService.PutAsync(gameCreated);
-
-                foreach (var line in lines)
+                foreach (var item in items)
                 {
-                    var items = line.Split(",");
-
-                    var groupCreated = new Group { Game = gameCreated };
-                    groupCreated = await _groupService.PutAsync(groupCreated);
-
-                    foreach (var item in items)
-                    {
-                        var itemCreated = new Item { Value = item, Group = groupCreated };
-                        itemCreated = await _itemService.PutAsync(itemCreated);
-                    }
+                    var itemCreated = new Item { Value = item, Group = groupCreated };
+                    itemCreated = await _itemService.PutAsync(itemCreated);
                 }
             }
-            catch (Exception)
-            {
-                throw;
-            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
 
         _alertService.Add(AlertType.Success, "Game was successfully imported.");
+    }
+
+    private async Task OnSubmit()
+    {
+        
     }
 } 
