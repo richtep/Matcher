@@ -60,9 +60,7 @@
     private long _previousGroupId;
 
     private static readonly Random Random = new Random();
-
-    //private List<Group> gameGroups = new();
-
+    
     private List<Item> _gameItems = new();
 
     private readonly List<ItemStatus> _gameStatusItems = new();
@@ -73,24 +71,9 @@
 
     private readonly Game _game = Index.CurrentGame;
 
-
     protected override async Task OnParametersSetAsync()
     {
         _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
-
-        //gameGroups = gameItems.Select(g => g.Group).Distinct().ToList();
-
-
-        @*
-         gameGroups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
-
-        foreach (var gameGroup in gameGroups) 
-        {
-            var gameItemsInGroup = await _itemService.ListAsync(i => i.Group.Id == gameGroup.Id);
-
-            gameItems = gameItemsInGroup.Concat(gameItems).ToList();
-        }
-        *@
 
         foreach (var item in _gameItems) 
         {
@@ -122,11 +105,11 @@
         switch (item.Status)
         {
             case 0:
-                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 1;
+                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id)!.Status = 1;
                 break;
 
             case 1:
-                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 0;
+                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id)!.Status = 0;
                 break;
         }
     }
@@ -137,7 +120,7 @@
 
         if (selectedItems.Count < 1) return; 
 
-        var firstGroupId = selectedItems.FirstOrDefault().Group.Id;
+        var firstGroupId = selectedItems.FirstOrDefault()!.Group.Id;
 
         var itemsInSelectedGroup = _gameStatusItems.Where(s => s.Group.Id == firstGroupId).ToList();
 
@@ -151,6 +134,6 @@
 
     private void MixItems()
     {
-        _gameStatusItemsMixed = _gameStatusItems.OrderBy(a => Random.Next()).ToList();
+        _gameStatusItemsMixed = _gameStatusItems.OrderBy(i => Random.Next()).ToList();
     }
 }
