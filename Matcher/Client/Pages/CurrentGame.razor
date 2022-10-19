@@ -7,56 +7,59 @@
 @inject GroupService _groupService;
 @inject ItemService _itemService;
 @inject IRedirectService _redirectService;
-
-<PageTitle>Matcher</PageTitle>
-
-<h1>@_game.Name</h1>
+@inject IAlertService _alertService;
 
 
-@{_previousGroupId=0;}
-
-@foreach (var item in _gameStatusItems) 
+@if (_game == null)
 {
-    if (_previousGroupId != item.Group.Id && _previousGroupId != 0 && item.Status == 2) 
-    {
-        <br /><hr/>
-    }
-
-    if (item.Status == 2) 
-    {
-        <button style="margin:5px;" class="btn btn-success" id=@item.Id>@item.Value</button>
-    }
-
-    _previousGroupId = item.Group.Id;
+    _redirectService.RedirectToAsync("/");
 }
+else
+{
+    <PageTitle>Matcher</PageTitle>
 
-<hr />
-@foreach (var item in _gameStatusItemsMixed)
+    <h1>@_game!.Name</h1>
+    
+    @foreach (var item in _gameStatusItemsMixed)
     {
         switch (item.Status)
-            {
-                case 0:
-                    ButtonClass = "btn btn-secondary";
-                    break;
+        {
+            case 0:
+                ButtonClass = "btn btn-secondary";
+                break;
 
-                case 1:
-                    ButtonClass = "btn btn-primary"; 
-                    break;
+            case 1:
+                ButtonClass = "btn btn-primary";
+                break;
 
-                case 2:
-                    ButtonClass = "btn btn-success";
-                    continue;
-                
-                default:
-                    break;
-            }
-
-        <button style="margin:5px;" class="@ButtonClass" id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>
+            case 2:
+                ButtonClass = "btn btn-success";
+                continue;
+        }
+        <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@item.Value</button>
     }
+    
+    {_previousGroupId = 0;}
+    @foreach(var item in _gameStatusItems)
+    {
+        if (_previousGroupId != item.Group.Id && item.Status == 2)
+        {
+        <br/><hr/>
+        }
+
+        @if (item.Status == 2)
+        {
+        <button style="margin:5px;" class="btn btn-success" id="@item.Id">@item.Value</button>
+        }
+        _previousGroupId = item.Group.Id;
+    }
+}
 
 
 @code
 {
+    private DateTime _startTime;
+
     private long _previousGroupId;
 
     private static readonly Random Random = new Random();
@@ -73,7 +76,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
+        if (_game!=null) _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
 
         foreach (var item in _gameItems) 
         {
@@ -89,6 +92,8 @@
         }
 
         MixItems();
+
+        _startTime = DateTime.Now;
     }
 
     void OnItemClick(ItemStatus item)
@@ -130,10 +135,17 @@
         {
             item.Status = 2;
         }
+
+        if (IsGameOver()) _alertService.Add(AlertType.Success, $"Game finished in {((DateTime.Now-_startTime).TotalMilliseconds)/1000} s");
     }
 
     private void MixItems()
     {
         _gameStatusItemsMixed = _gameStatusItems.OrderBy(i => Random.Next()).ToList();
+    }
+
+    private bool IsGameOver()
+    {
+        return _gameStatusItems.All(s => s.Status == 2);
     }
 }
