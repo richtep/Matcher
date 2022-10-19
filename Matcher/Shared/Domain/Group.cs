@@ -1,8 +1,7 @@
-using EntitySystem.Shared.Domain;
-using EntitySystem.Shared.Fluent.Domain;
 using System.ComponentModel.DataAnnotations;
+using EntitySystem.Shared.Fluent.Domain;
 
-namespace Matcher.Shared;
+namespace Matcher.Shared.Domain;
 
 public class Group : Entity
 {

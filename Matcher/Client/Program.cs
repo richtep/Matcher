@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using EntitySystem.Client.Fluent;
 using Matcher.Client.Services;
 using Matcher.Shared;
+using Matcher.Shared.Domain;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

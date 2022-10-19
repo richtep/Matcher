@@ -2,6 +2,9 @@
 @using EntitySystem.Client.Services
 @using Matcher.Shared;
 @using Matcher.Client.Services;
+@using Matcher.Shared.Domain
+@using Matcher.Shared.Models
+@using Microsoft.AspNetCore.Components
 
 @inject IAlertService _alertService;
 @inject GameService _gameService;
@@ -13,7 +16,54 @@
 
 <h1>Import game file</h1>
 
+
 <InputFile OnChange="@LoadFiles"/>
+
+<EditForm autocomplete="on" Model="@SignUpModel"
+                                            OnValidSubmit="@LoadFiles()">
+                                            <DataAnnotationsValidator />
+                                            <div class="mt-2">
+                                                <ValidationSummary />
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label" for="card-name">First Name</label>
+                                                <input class="form-control" type="text" autocomplete="on" id="card-name"
+                                                    @bind-value="SignUpModel.NickName" />
+                                            </div>
+                                            
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="card-email">Email address</label>
+                                                <input class="form-control" type="email" autocomplete="on"
+                                                    id="card-email" @bind-value="SignUpModel.Email" />
+                                            </div>
+                                            <div class="row gx-2">
+                                                <div class="mb-3 col-sm-6">
+                                                    <label class="form-label" for="card-password">Password</label>
+                                                    <input class="form-control" type="password" autocomplete="on"
+                                                        id="card-password"
+                                                        @bind-value="FreelanceSignUpModel.Password" />
+                                                </div>
+                                                <div class="mb-3 col-sm-6">
+                                                    <label class="form-label" for="card-confirm-password">Confirm
+                                                        Password</label>
+                                                    <input class="form-control" type="password" autocomplete="on"
+                                                        id="card-confirm-password"
+                                                        @bind-value="FreelanceSignUpModel.Confirm" />
+                                                </div>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                    id="card-register-checkbox" @bind="ConsentIsChecked" />
+                                                <label class="form-label" for="card-register-checkbox">I accept the <a
+                                                        href="#!">terms </a>and <a href="#!">privacy policy</a></label>
+                                            </div>
+                                            <div class="mb-3">
+                                                <button class="btn btn-primary d-block w-100 mt-3" type="submit"
+                                                    name="submit" disabled="@(!ConsentIsChecked)">Register</button>
+                                            </div>
+                                        </EditForm>
+
 
 @code 
 {

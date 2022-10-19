@@ -1,7 +1,7 @@
-using EntitySystem.Shared.Fluent.Domain;
 using System.ComponentModel.DataAnnotations;
+using Matcher.Shared.Domain;
 
-namespace Matcher.Shared;
+namespace Matcher.Shared.Models;
 
 public class ItemStatus
 {

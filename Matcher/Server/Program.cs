@@ -1,12 +1,17 @@
 using EntitySystem.Server.Extensions;
 using EntitySystem.Server.Fluent;
+using FluentNHibernate.Cfg.Db;
 using Matcher.Server.Services;
 using Matcher.Shared;
+using Matcher.Shared.Domain;
 using Microsoft.AspNetCore.ResponseCompression;
+using NHibernate.Dialect;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEntitySystemServerFluent<ItemService, Item>();
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
+builder.Services.AddEntitySystemServerFluent<ItemService, Item>(PostgreSQLConfiguration.Standard.ConnectionString("server=130.162.216.255;Port=8083;Database=dbMatcher;User Id=admin;Password=Veverka378;MaxPoolSize=100;Timeout=15;CommandTimeout=300").Dialect<PostgreSQL83Dialect>());
 
 /*builder.Services.AddEntitySystemServerFluent<ItemService, Item>
 (i => i.EnsureExist(Group.Reference, g => g.Name));

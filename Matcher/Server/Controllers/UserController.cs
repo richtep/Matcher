@@ -1,6 +1,7 @@
 ﻿using EntitySystem.Server.Controllers;
 using Matcher.Server.Services;
 using Matcher.Shared;
+using Matcher.Shared.Domain;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Matcher.Server.Controllers;
