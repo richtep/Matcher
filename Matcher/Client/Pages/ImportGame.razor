@@ -21,7 +21,7 @@
                                                 <ValidationSummary />
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label" for="card-name">First Name</label>
+                                                <label class="form-label" for="card-name">Name or Nick</label>
                                                 <input class="form-control" type="text" autocomplete="on" id="card-name"
                                                     @bind-value="SignUpModel.NickName" />
                                             </div>
@@ -69,7 +69,8 @@
 {
     [Parameter]
     public SignUpModel SignUpModel { get; set; } = new();
-
+    
+    private string fileContent;
 
     private async Task LoadFiles(InputFileChangeEventArgs e) 
     {
@@ -110,5 +111,10 @@
     private async Task OnSubmit()
     {
         
+    }
+
+    private bool ImportFileIsOk(string content)
+    {
+        return true;
     }
 } 

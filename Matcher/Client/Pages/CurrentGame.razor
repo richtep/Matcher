@@ -1,5 +1,4 @@
 ﻿@page "/current-game";
-@using Matcher.Shared;
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 @using Matcher.Shared.Domain
@@ -11,16 +10,16 @@
 
 <PageTitle>Matcher</PageTitle>
 
-<h1>@game.Name</h1>
+<h1>@_game.Name</h1>
 
 
-@{previousGroupId=0;}
+@{_previousGroupId=0;}
 
-@foreach (var item in gameStatusItems) 
+@foreach (var item in _gameStatusItems) 
 {
-    if (previousGroupId != item.Group.Id && previousGroupId != 0) 
+    if (_previousGroupId != item.Group.Id && _previousGroupId != 0 && item.Status == 2) 
     {
-        <br />
+        <br /><hr/>
     }
 
     if (item.Status == 2) 
@@ -28,56 +27,62 @@
         <button style="margin:5px;" class="btn btn-success" id=@item.Id>@item.Value</button>
     }
 
-    previousGroupId = item.Group.Id;
+    _previousGroupId = item.Group.Id;
 }
 
 <hr />
-@foreach (var item in gameStatusItemsMixed)
+@foreach (var item in _gameStatusItemsMixed)
     {
         switch (item.Status)
             {
                 case 0:
-                    buttonclass = "btn btn-secondary";
+                    ButtonClass = "btn btn-secondary";
                     break;
 
                 case 1:
-                    buttonclass = "btn btn-primary"; 
+                    ButtonClass = "btn btn-primary"; 
                     break;
 
                 case 2:
-                    buttonclass = "btn btn-success";
+                    ButtonClass = "btn btn-success";
                     continue;
                 
                 default:
                     break;
             }
 
-        <button style="margin:5px;" class="@buttonclass" id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>
+        <button style="margin:5px;" class="@ButtonClass" id=@item.Id @onclick="() => OnItemClick(item)">@item.Value</button>
     }
 
 
 @code
 {
-    private long previousGroupId;
+    private long _previousGroupId;
 
-    private static Random random = new Random();
+    private static readonly Random Random = new Random();
 
-    private List<Group> gameGroups = new();
+    //private List<Group> gameGroups = new();
 
-    private List<Item> gameItems = new();
+    private List<Item> _gameItems = new();
 
-    private List<ItemStatus> gameStatusItems = new();
+    private readonly List<ItemStatus> _gameStatusItems = new();
 
-    private List<ItemStatus> gameStatusItemsMixed = new();
+    private List<ItemStatus> _gameStatusItemsMixed = new();
 
-    private string buttonclass { get; set; }
+    private string ButtonClass { get; set; }
 
-    private Game game = Index.CurrentGame;
+    private readonly Game _game = Index.CurrentGame;
 
 
     protected override async Task OnParametersSetAsync()
     {
-        gameGroups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
+        _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
+
+        //gameGroups = gameItems.Select(g => g.Group).Distinct().ToList();
+
+
+        @*
+         gameGroups = await _groupService.ListAsync(g => g.Game.Id == game.Id);
 
         foreach (var gameGroup in gameGroups) 
         {
@@ -85,8 +90,9 @@
 
             gameItems = gameItemsInGroup.Concat(gameItems).ToList();
         }
+        *@
 
-        foreach (var item in gameItems) 
+        foreach (var item in _gameItems) 
         {
             var itemStatus = new ItemStatus
                 {
@@ -96,7 +102,7 @@
                     Status = 0
                 };
 
-            gameStatusItems.Add(itemStatus);
+            _gameStatusItems.Add(itemStatus);
         }
 
         MixItems();
@@ -116,40 +122,35 @@
         switch (item.Status)
         {
             case 0:
-                gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 1;
+                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 1;
                 break;
 
             case 1:
-                gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 0;
-                break;
-
-            default:
+                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id).Status = 0;
                 break;
         }
     }
 
     private void RemoveCompletedItems()
     {
-        var selectedItems = gameStatusItems.Where(s => s.Status == 1).ToList();
+        var selectedItems = _gameStatusItems.Where(s => s.Status == 1).ToList();
 
         if (selectedItems.Count < 1) return; 
 
         var firstGroupId = selectedItems.FirstOrDefault().Group.Id;
 
-        var itemsInSelectedGroup = gameStatusItems.Where(s => s.Group.Id == firstGroupId).ToList();
+        var itemsInSelectedGroup = _gameStatusItems.Where(s => s.Group.Id == firstGroupId).ToList();
+
+        if ((itemsInSelectedGroup.Any(isg => isg.Status != 1)) || (selectedItems.Any(si => si.Group.Id != firstGroupId))) return;
         
-        if ( (itemsInSelectedGroup.All(isg => isg.Status == 1)) && 
-             (selectedItems.All(si => si.Group.Id == firstGroupId)) )
+        foreach (var item in selectedItems)
         {
-            foreach (var item in selectedItems)
-            {
-                item.Status = 2;
-            }
+            item.Status = 2;
         }
     }
 
     private void MixItems()
     {
-        gameStatusItemsMixed = gameStatusItems.OrderBy(a => random.Next()).ToList();
+        _gameStatusItemsMixed = _gameStatusItems.OrderBy(a => Random.Next()).ToList();
     }
 }

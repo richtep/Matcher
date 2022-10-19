@@ -1,5 +1,4 @@
 ﻿@page "/"
-@using Matcher.Shared;
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 @using Matcher.Shared.Domain
@@ -9,7 +8,6 @@
 @inject ItemService _itemService;
 @inject UserService _userService;
 @inject IRedirectService _redirectService;
-@inject HttpClient Http;
 @inject IAlertService _alertService;
 
 <PageTitle>Game list</PageTitle>
@@ -17,7 +15,7 @@
 <h1>Game list</h1>
 
 
- @if(games != null )
+ @if(_games != null )
  {
     <table>
         <tr>
@@ -25,7 +23,7 @@
             <th>Author</th>
         </tr>
 
-         @foreach(var game in games) 
+         @foreach(var game in _games) 
             {
                 <tr @onclick="() => StartGame(game)">
                     <td>@game.Name</td>
@@ -39,20 +37,13 @@
 
 @code
 {
-    private const string filePath = @"c:\matcher\";
-
-    private const string fileName = "gameImport.txt";
-
     public static Game CurrentGame;
 
-    private List<Game> games;
-
-    private List<string> lines;
-
+    private List<Game> _games;
 
     protected override async Task OnParametersSetAsync()
     {
-        games = await _gameService.ListAsync(); 
+        _games = await _gameService.ListAsync(); 
     }
 
     private async Task StartGame(Game game) 
