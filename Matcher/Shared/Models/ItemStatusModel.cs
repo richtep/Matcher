@@ -3,7 +3,7 @@ using Matcher.Shared.Domain;
 
 namespace Matcher.Shared.Models;
 
-public class ItemStatus
+public class ItemStatusModel
 {
     [Required]
     public long Id { get; set; }

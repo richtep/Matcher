@@ -66,9 +66,9 @@ else
     
     private List<Item> _gameItems = new();
 
-    private readonly List<ItemStatus> _gameStatusItems = new();
+    private readonly List<ItemStatusModel> _gameStatusItems = new();
 
-    private List<ItemStatus> _gameStatusItemsMixed = new();
+    private List<ItemStatusModel> _gameStatusItemsMixed = new();
 
     private string ButtonClass { get; set; }
 
@@ -80,7 +80,7 @@ else
 
         foreach (var item in _gameItems) 
         {
-            var itemStatus = new ItemStatus
+            var itemStatus = new ItemStatusModel
                 {
                     Id = item.Id,
                     Group = item.Group,
@@ -96,7 +96,7 @@ else
         _startTime = DateTime.Now;
     }
 
-    void OnItemClick(ItemStatus item)
+    void OnItemClick(ItemStatusModel item)
     {
         SetItemStatus(item);
 
@@ -105,7 +105,7 @@ else
         StateHasChanged();
     }
 
-    void SetItemStatus(ItemStatus item)
+    void SetItemStatus(ItemStatusModel item)
     {
         switch (item.Status)
         {
