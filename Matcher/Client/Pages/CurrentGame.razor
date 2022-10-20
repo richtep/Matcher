@@ -38,15 +38,20 @@ else
                 continue;
         }
         
-        @*<button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)"><span>item.Value</button>*@
-
-        <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString)AddSubsript(item.Value))</button>
+        @if (@_game.Chemical == true) 
+        {
+            <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString)AddSubsript(item.Value))</button>
+        }
+        else
+        {
+            <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">item.Value</button>
+        }
     }
     
     {_previousGroupId = 0;}
     @foreach(var item in _gameStatusItems)
     {
-        if (_previousGroupId != item.Group.Id && item.Status == 2)
+        @if (_previousGroupId != item.Group.Id && item.Status == 2)
         {
         <br/><hr/>
         }
@@ -153,13 +158,27 @@ else
         return _gameStatusItems.All(s => s.Status == 2);
     }
 
-    private static readonly Regex _regex = new Regex(@"^([a-zA-Z]+)([0-9]+)([a-zA-Z]+)([0-9]+)$", RegexOptions.Compiled);
-
-    public static string AddSubsript(string value)
+    
+    private Dictionary<string, string> reg = new()
     {
-        var test = _regex.Replace(value, "$1<sub>$2</sub>$3<sub>$4</sub>");
+        { @"^([a-zA-Z]+)([0-9]+)([a-zA-Z]+)([0-9]+)$","$1<sub>$2</sub>$3<sub>$4</sub>"},
+        { @"^([a-zA-Z]+)([a-zA-Z]+)([0-9]+)$","$1$2<sub>$3</sub>"},
+        { @"^([a-zA-Z]+)([0-9]+)([(][a-zA-Z]+)([0-9])([)])([0-9]+)$","$1<sub>$2</sub>$3<sub>$4</sub>$5<sub>$6</sub>"}
+    };
 
-        return test;
-    }
+    public string AddSubsript(string value)
+    {
+        foreach (KeyValuePair<string, string> entry in reg)
+        {
+            var regex = new Regex(entry.Key, RegexOptions.Compiled);
 
+            if (regex.IsMatch(value)) 
+            {
+                return regex.Replace(value, entry.Value);
+            }
+        }
+
+        return value;
+      }
 }
+

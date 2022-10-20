@@ -12,4 +12,6 @@ public class Game : Entity
         
     [Required]
     public virtual string Password { get; set; }
+
+    public virtual bool Chemical { get; set; }
 }
