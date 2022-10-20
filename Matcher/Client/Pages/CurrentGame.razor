@@ -58,7 +58,14 @@ else
 
         @if (item.Status == 2)
         {
-        <button style="margin:5px;" class="btn btn-success" id="@item.Id">@item.Value</button>
+            @if (@_game.Chemical == true)
+            {
+                <button style="margin:5px;" class="btn btn-success" id="@item.Id">@((MarkupString)AddSubsript(item.Value))</button>
+            }
+            else 
+            {
+                <button style="margin:5px;" class="btn btn-success" id="@item.Id">@item.Value</button>
+            }
         }
         _previousGroupId = item.Group.Id;
     }
