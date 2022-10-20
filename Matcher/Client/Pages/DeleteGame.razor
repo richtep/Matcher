@@ -25,6 +25,7 @@
             <ValidationSummary/>
         </div>
 
+        <label style="margin:7px;">Select game </label>
         <InputSelect @bind-Value="DeleteGameModel.GameId">
             @foreach (var game in _games)
             {
@@ -33,13 +34,13 @@
         </InputSelect>
 
         <div class="mb-3">
-            <label class="form-label" for="card-email">Author's password</label>
-            <input class="form-control" type="text" autocomplete="on"
+            <label style="margin:7px;" class="form-label" for="card-email">Author's password</label>
+            <input style="margin:7px;" class="form-control" type="text" autocomplete="on"
                    id="card-email" @bind-value="DeleteGameModel.Password"/>
         </div>
 
         <div class="mb-3">
-            <button class="btn btn-primary d-block w-100 mt-3" type="submit"
+            <button style="margin:7px;"  class="btn btn-primary d-block w-100 mt-3" type="submit"
                     name="submit">Delete selected game</button>
         </div>
     </EditForm>
@@ -89,9 +90,11 @@
 
         var itemsToBeDeleted = await _itemService.ListAsync(i => i.Group.Game.Id == game.Id);
 
-        itemsToBeDeleted.ForEach(async i =>  await _itemService.DeleteAsync(i));
+        var tasks = itemsToBeDeleted.Select(async i =>  await _itemService.DeleteAsync(i));
+        await Task.WhenAll(tasks);
 
-        groupsToBeDeleted.ForEach(async g => await _groupService.DeleteAsync(g));
+        tasks = groupsToBeDeleted.Select(async g => await _groupService.DeleteAsync(g));
+        await Task.WhenAll(tasks);
 
         await _gameService.DeleteAsync(game);
     }
