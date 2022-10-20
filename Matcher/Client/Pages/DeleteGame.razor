@@ -59,7 +59,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        _games = await _gameService.ListAsync(g => g.Active == true); 
+        _games = await _gameService.ListAsync(); 
     }
 
     private async Task OnSubmit()
@@ -80,7 +80,7 @@
         */
 
         _alertService.Add(AlertType.Success, "The game was deleted.");
-        await _redirectService.RedirectToAsync("/service/delete");
+        await _redirectService.RedirectToAsync("/");
     }
 
     private async Task DeleteGameAsync(Game game) 

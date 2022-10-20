@@ -118,7 +118,7 @@
                 return;
             }
             
-            var game =  (await _gameService.ListAsync(g => g.Name == SignUpModel.GameName )).FirstOrDefault(game => game.Active == true);
+            var game =  (await _gameService.ListAsync(g => g.Name == SignUpModel.GameName )).FirstOrDefault();
             
             if (game is not null)
             {

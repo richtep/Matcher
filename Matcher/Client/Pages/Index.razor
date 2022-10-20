@@ -42,7 +42,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        _games = await _gameService.ListAsync(g => g.Active == true); 
+        _games = await _gameService.ListAsync(); 
     }
 
     private async Task StartGame(Game game) 
