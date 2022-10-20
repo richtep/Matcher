@@ -3,6 +3,7 @@
 @using EntitySystem.Client.Services;
 @using Matcher.Shared.Domain
 @using Matcher.Shared.Models
+@using System.Text.RegularExpressions;
 
 @inject GroupService _groupService;
 @inject ItemService _itemService;
@@ -36,7 +37,10 @@ else
                 ButtonClass = "btn btn-success";
                 continue;
         }
-        <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@item.Value</button>
+        @*<button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)"><span>@AddSubsript(item.Value)</span></button>*@
+
+
+        <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)"><span>H<sub>2</sub>SO<sub>4</sub></span></button>
     }
     
     {_previousGroupId = 0;}
@@ -63,7 +67,7 @@ else
     private long _previousGroupId;
 
     private static readonly Random Random = new Random();
-    
+
     private List<Item> _gameItems = new();
 
     private readonly List<ItemStatusModel> _gameStatusItems = new();
@@ -130,7 +134,7 @@ else
         var itemsInSelectedGroup = _gameStatusItems.Where(s => s.Group.Id == firstGroupId).ToList();
 
         if ((itemsInSelectedGroup.Any(isg => isg.Status != 1)) || (selectedItems.Any(si => si.Group.Id != firstGroupId))) return;
-        
+
         foreach (var item in selectedItems)
         {
             item.Status = 2;
@@ -148,4 +152,14 @@ else
     {
         return _gameStatusItems.All(s => s.Status == 2);
     }
+
+    private static readonly Regex _regex = new Regex(@"^([a-zA-Z]+)([0-9]+)([a-zA-Z]+)([0-9]+)$", RegexOptions.Compiled);
+
+    public static string AddSubsript(string value)
+    {
+        var test = _regex.Replace(value, "$1<sub>$2</sub>$3<sub>$4</sub>");
+
+        return test;
+    }
+
 }

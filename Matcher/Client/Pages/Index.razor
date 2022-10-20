@@ -1,7 +1,7 @@
 ﻿@page "/"
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
-@using Matcher.Shared.Domain
+@using Matcher.Shared.Domain;
 
 @inject GameService _gameService;
 @inject GroupService _groupService;
@@ -21,6 +21,11 @@
         <tr>
             <th>Name</th>
             <th>Author</th>
+
+           <th>
+                H<sub>2</sub>O
+
+           </th>
         </tr>
 
          @foreach(var game in _games) 
