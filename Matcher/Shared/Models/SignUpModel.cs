@@ -7,6 +7,9 @@ public class SignUpModel
     [Required]
     public string Email { get; set; }
 
+    [Required]
+    public string GameName { get; set; }
+
     /*
     [Required]
     public string Password { get; set; }
@@ -16,6 +19,8 @@ public class SignUpModel
     */
 
     public string NickName { get; set; }
+
+
 
    // public string LastName { get; set; }
 }

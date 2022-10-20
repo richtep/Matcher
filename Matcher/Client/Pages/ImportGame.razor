@@ -11,92 +11,129 @@
 @inject ItemService _itemService;
 @inject UserService _userService;
 
-<PageTitle>Import game</PageTitle>
+<PageTitle>Create new game</PageTitle>
 
-<h1>Import game file</h1>
+<h1>New game</h1>
 
-<EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
-                                            <DataAnnotationsValidator />
-                                            <div class="mt-2">
-                                                <ValidationSummary />
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label" for="card-name">Name or Nick</label>
-                                                <input class="form-control" type="text" autocomplete="on" id="card-name"
-                                                    @bind-value="SignUpModel.NickName" />
-                                            </div>
-                                            
+<br/><br/>
 
-                                            <div class="mb-3">
-                                                <label class="form-label" for="card-email">Email address</label>
-                                                <input class="form-control" type="email" autocomplete="on"
-                                                       id="card-email" @bind-value="SignUpModel.Email" />
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label class="form-label">Import file</label>
-                                                <InputFile OnChange="@LoadFiles"/>
-                                            </div>
-                                            
-                                            
+                <EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
+                        <DataAnnotationsValidator />
+                        <div class="mt-2">
+                            <ValidationSummary />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label" for="card-name">Name of the game</label>
+                            <input class="form-control" type="text" autocomplete="on" id="card-name"
+                                   @bind-value="SignUpModel.GameName" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="card-name">Author</label>
+                            <input class="form-control" type="text" autocomplete="on" id="card-name"
+                                @bind-value="SignUpModel.NickName" />
+                        </div>
+                        
 
-                                            @*
-                                            <div class="row gx-2">
-                                                <div class="mb-3 col-sm-6">
-                                                    <label class="form-label" for="card-password">Password</label>
-                                                    <input class="form-control" type="password" autocomplete="on"
-                                                        id="card-password"
-                                                        @bind-value="SignUpModel.Password" />
-                                                </div>
-                                                <div class="mb-3 col-sm-6">
-                                                    <label class="form-label" for="card-confirm-password">Confirm
-                                                        Password</label>
-                                                    <input class="form-control" type="password" autocomplete="on"
-                                                        id="card-confirm-password"
-                                                        @bind-value="SignUpModel.Confirm" />
-                                                </div>
-                                            </div>
-                                            *@
-                                            
-                                            <div class="mb-3">
-                                                <button class="btn btn-primary d-block w-100 mt-3" type="submit"
-                                                    name="submit" @*disabled="@(!ConsentIsChecked)"*@>Create game</button>
-                                            </div>
-                                        </EditForm>
+                        <div class="mb-3">
+                            <label class="form-label" for="card-email">Contact email address</label>
+                            <input class="form-control" type="email" autocomplete="on"
+                                   id="card-email" @bind-value="SignUpModel.Email" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Import file </label>
+                            <InputFile OnChange="@LoadLines"/>
+                        </div>
+                        
+                        
+
+                        @*
+                        <div class="row gx-2">
+                            <div class="mb-3 col-sm-6">
+                                <label class="form-label" for="card-password">Password</label>
+                                <input class="form-control" type="password" autocomplete="on"
+                                    id="card-password"
+                                    @bind-value="SignUpModel.Password" />
+                            </div>
+                            <div class="mb-3 col-sm-6">
+                                <label class="form-label" for="card-confirm-password">Confirm
+                                    Password</label>
+                                <input class="form-control" type="password" autocomplete="on"
+                                    id="card-confirm-password"
+                                    @bind-value="SignUpModel.Confirm" />
+                            </div>
+                        </div>
+                        *@
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-primary d-block w-100 mt-3" type="submit"
+                                name="submit" disabled="@(!_importFileIsOk)">Create new game</button>
+                        </div>
+                    </EditForm>
 
 
 @code 
 {
+        private const int MaxGroups = 50;
+        private const int MaxItems = 10;
+        private const int MaxItemCharacters = 30;
+        private const char Separator = ',';
+
+
+
     [Parameter]
     public SignUpModel SignUpModel { get; set; } = new();
     
-    private string fileContent;
+    private string _fileContent;
 
-    private async Task LoadFiles(InputFileChangeEventArgs e) 
+    private bool _importFileIsOk = false;
+
+    private List<string> _lines = new();
+
+
+    private async Task LoadLines(InputFileChangeEventArgs e) 
     {
         try
         {
-            var content = await new StreamReader(e.File.OpenReadStream()).ReadToEndAsync();
+            _fileContent = await new StreamReader(e.File.OpenReadStream()).ReadToEndAsync();
 
-            var lines = (content.Split(new string[] { Environment.NewLine }, StringSplitOptions.None)).ToList();
+            _lines = ParseFileToLines(_fileContent, out var reason);
 
-            var userCreated = new User { Nick = "User1", Email = "a@b.cz", Password = "psw" };
+            if (_lines is null) _alertService.Add(AlertType.Error, $"Import file is wrong, because {reason}");
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        try
+        {
+            if (_lines is null)
+            {
+                _alertService.Add(AlertType.Error, "Import file is wrong.");
+                return;
+            }
+
+            var userCreated = new User { Nick = SignUpModel.NickName, Email = SignUpModel.Email};
             userCreated = await _userService.PutAsync(userCreated);
 
-            var gameCreated = new Game { Name = e.File.Name, User = userCreated };
+            var gameCreated = new Game { Name = SignUpModel.GameName, User = userCreated };
             gameCreated = await _gameService.PutAsync(gameCreated);
 
-            foreach (var line in lines)
+            foreach (var line in _lines)
             {
-                var items = line.Split(",");
-
                 var groupCreated = new Group { Game = gameCreated };
                 groupCreated = await _groupService.PutAsync(groupCreated);
+               
+                var items = line.Split(Separator).ToList();
 
-                foreach (var item in items)
+                foreach (var itemCreated in items.Select(item => new Item { Value = item, Group = groupCreated }))
                 {
-                    var itemCreated = new Item { Value = item, Group = groupCreated };
-                    itemCreated = await _itemService.PutAsync(itemCreated);
+                    await _itemService.PutAsync(itemCreated);
                 }
             }
         }
@@ -108,13 +145,35 @@
         _alertService.Add(AlertType.Success, "New game was created.");
     }
 
-    private async Task OnSubmit()
+    private List<string> ParseFileToLines(string content, out string reason)
     {
-        
-    }
+        _importFileIsOk = false;
 
-    private bool ImportFileIsOk(string content)
-    {
-        return true;
+        _lines = (_fileContent.Split(new string[] {Environment.NewLine}, StringSplitOptions.None)).ToList();
+
+        _lines = _lines.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+
+        if (_lines.Count > MaxGroups)
+        {
+            reason = $"lines count exceeded maximum limit of Groups ({MaxGroups})";
+            return null;
+        }
+
+        foreach (var items in _lines.Select(line => line.Split(Separator).ToList()))
+        {
+            if (items.Count is < 2 or > MaxItems)
+            {
+                reason = $"items count on each row should be between 2 and {MaxItems}";
+                return null;
+            }
+
+            if (!items.Any(item => item.Length > MaxItemCharacters)) continue;
+            reason = $"each item length should not exceed ({MaxItemCharacters})";
+            return null;
+        }
+
+        reason = "File was successfully parsed to lines.";
+        _importFileIsOk = true;
+        return _lines;
     }
 } 

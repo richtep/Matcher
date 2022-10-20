@@ -9,6 +9,5 @@ public class User : Entity
 
     [Required]
     public virtual string Email { get; set; }
-    [Required]
-    public virtual string Password { get; set; }
+   
 }
