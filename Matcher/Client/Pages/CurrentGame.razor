@@ -37,10 +37,10 @@ else
                 ButtonClass = "btn btn-success";
                 continue;
         }
-        @*<button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)"><span>@AddSubsript(item.Value)</span></button>*@
+        
+        @*<button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)"><span>item.Value</button>*@
 
-
-        <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)"><span>H<sub>2</sub>SO<sub>4</sub></span></button>
+        <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString)AddSubsript(item.Value))</button>
     }
     
     {_previousGroupId = 0;}
