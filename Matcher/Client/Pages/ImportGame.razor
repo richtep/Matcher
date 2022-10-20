@@ -10,6 +10,7 @@
 @inject GroupService _groupService;
 @inject ItemService _itemService;
 @inject UserService _userService;
+@inject IRedirectService _redirectService;
 
 <PageTitle>Create new game</PageTitle>
 
@@ -17,16 +18,23 @@
 
 <br/><br/>
 
-                <EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
+
+
+<EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
                         <DataAnnotationsValidator />
                         <div class="mt-2">
                             <ValidationSummary />
                         </div>
                         
                         <div class="mb-3">
+                        <label class="form-label">Import file:  </label>
+                        <label class="form-label" style="margin:16px;"> <InputFile OnChange="@LoadLines"/> </label>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label" for="card-name">Name of the game</label>
                             <input class="form-control" type="text" autocomplete="on" id="card-name"
-                                   @bind-value="SignUpModel.GameName" />
+                                   @bind-value="SignUpModel.GameName"/>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="card-name">Author</label>
@@ -41,14 +49,6 @@
                                    id="card-email" @bind-value="SignUpModel.Email" />
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Import file </label>
-                            <InputFile OnChange="@LoadLines"/>
-                        </div>
-                        
-                        
-
-                        @*
                         <div class="row gx-2">
                             <div class="mb-3 col-sm-6">
                                 <label class="form-label" for="card-password">Password</label>
@@ -64,7 +64,7 @@
                                     @bind-value="SignUpModel.Confirm" />
                             </div>
                         </div>
-                        *@
+                        
                         
                         <div class="mb-3">
                             <button class="btn btn-primary d-block w-100 mt-3" type="submit"
@@ -117,21 +117,38 @@
                 _alertService.Add(AlertType.Error, "Import file is wrong.");
                 return;
             }
+            
+            var game =  (await _gameService.ListAsync(g => g.Name == SignUpModel.GameName )).FirstOrDefault(game => game.Active == true);
+            
+            if (game is not null)
+            {
+                _alertService.Add(AlertType.Error, "This name of the game already exists.");
+                return;
+            }
 
-            var userCreated = new User { Nick = SignUpModel.NickName, Email = SignUpModel.Email};
-            userCreated = await _userService.PutAsync(userCreated);
 
-            var gameCreated = new Game { Name = SignUpModel.GameName, User = userCreated };
-            gameCreated = await _gameService.PutAsync(gameCreated);
+            var user = (await _userService.ListAsync(u => u.Email == SignUpModel.Email)).FirstOrDefault();
+
+            if (user is null)
+            {
+                user = new User { Nick = SignUpModel.NickName, Email = SignUpModel.Email};
+                user = await _userService.PutAsync(user);
+            }
+
+            
+
+
+            game = new Game { Name = SignUpModel.GameName, User = user, Password = SignUpModel.Password};
+            game = await _gameService.PutAsync(game);
 
             foreach (var line in _lines)
             {
-                var groupCreated = new Group { Game = gameCreated };
-                groupCreated = await _groupService.PutAsync(groupCreated);
+                var group = new Group { Game = game };
+                group = await _groupService.PutAsync(group);
                
                 var items = line.Split(Separator).ToList();
 
-                foreach (var itemCreated in items.Select(item => new Item { Value = item, Group = groupCreated }))
+                foreach (var itemCreated in items.Select(item => new Item { Value = item, Group = group }))
                 {
                     await _itemService.PutAsync(itemCreated);
                 }
@@ -141,6 +158,8 @@
         {
             throw;
         }
+
+        await _redirectService.RedirectToAsync("/");
 
         _alertService.Add(AlertType.Success, "New game was created.");
     }

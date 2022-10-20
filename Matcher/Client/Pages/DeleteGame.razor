@@ -1,0 +1,86 @@
+﻿@page "/service/delete"
+@using EntitySystem.Client.Services
+@using Matcher.Client.Services;
+@using Matcher.Shared.Domain
+@using Matcher.Shared.Models
+@using Microsoft.AspNetCore.Components
+
+@inject IAlertService _alertService;
+@inject GameService _gameService;
+@inject GroupService _groupService;
+@inject ItemService _itemService;
+@inject UserService _userService;
+
+<PageTitle>Delete game</PageTitle>
+
+<h1>Delete game</h1>
+
+<br/><br/>
+@if (_games is not null && _games?.Count>0)
+{
+    <EditForm autocomplete="on" Model="@DeleteGameModel" OnValidSubmit="@OnSubmit">
+        <DataAnnotationsValidator/>
+        <div class="mt-2">
+            <ValidationSummary/>
+        </div>
+
+
+        <InputSelect @bind-Value="DeleteGameModel.GameName">
+            @foreach (var game in _games)
+            {
+                <option value="@game.Id">@game.Name</option>
+            }
+        </InputSelect>
+
+        <div class="mb-3">
+            <label class="form-label" for="card-email">Author's password</label>
+            <input class="form-control" type="text" autocomplete="on"
+                   id="card-email" @bind-value="DeleteGameModel.Password"/>
+        </div>
+
+        <div class="mb-3">
+            <button class="btn btn-primary d-block w-100 mt-3" type="submit"
+                    name="submit">Delete selected game</button>
+        </div>
+    </EditForm>
+}
+
+@if (_games is null)
+{
+    _alertService.Add(AlertType.Info, "No games in database.");
+}
+
+
+@code 
+{
+
+    [Parameter]
+    public DeleteGameModel DeleteGameModel { get; set; } = new();
+    
+    private List<Game> _games;
+
+    
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        _games = await _gameService.ListAsync(g => g.Active == true); 
+    }
+   
+    private async Task OnSubmit()
+    {
+
+        if (_selectedGame.User.Email != DeleteGameModel.Password)
+        {
+            _alertService.Add(AlertType.Error, "Wrong password.");
+            return;
+        }
+
+        _selectedGame.Active = false;
+
+        await _gameService.PutAsync(_selectedGame);
+
+        _alertService.Add(AlertType.Success, "The game was deleted.");
+    }
+
+    
+} 
