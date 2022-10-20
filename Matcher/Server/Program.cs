@@ -17,8 +17,6 @@ builder.Services.AddEntitySystemServerFluent<ItemService, Item>(PostgreSQLConfig
 (i => i.EnsureExist(Group.Reference, g => g.Name));
 */
 
-
-
 // Add services to the container.
 
 builder.Services.AddControllersWithViews();

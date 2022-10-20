@@ -33,7 +33,6 @@
     </table>
  }
 
-@*<button @onclick="@ImportGameAsync">Import new game</button>*@
 
 @code
 {
@@ -50,10 +49,5 @@
     {
         CurrentGame = game;
         await _redirectService.RedirectToAsync("/current-game");
-    }
-
-    private async Task ImportGameAsync()
-    {
-        await _redirectService.RedirectToAsync("/import-game");
     }
 }

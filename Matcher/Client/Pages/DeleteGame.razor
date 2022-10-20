@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components
 
 @inject IAlertService _alertService;
+@inject IRedirectService _redirectService;
 @inject GameService _gameService;
 @inject GroupService _groupService;
 @inject ItemService _itemService;
@@ -24,8 +25,7 @@
             <ValidationSummary/>
         </div>
 
-
-        <InputSelect @bind-Value="DeleteGameModel.GameName">
+        <InputSelect @bind-Value="DeleteGameModel.GameId">
             @foreach (var game in _games)
             {
                 <option value="@game.Id">@game.Name</option>
@@ -45,42 +45,54 @@
     </EditForm>
 }
 
-@if (_games is null)
+@if (_games?.Count == 0)
 {
     _alertService.Add(AlertType.Info, "No games in database.");
 }
 
-
 @code 
 {
-
     [Parameter]
     public DeleteGameModel DeleteGameModel { get; set; } = new();
-    
+
     private List<Game> _games;
 
-    
-    
     protected override async Task OnParametersSetAsync()
     {
         _games = await _gameService.ListAsync(g => g.Active == true); 
     }
-   
+
     private async Task OnSubmit()
     {
+        var selectedGame = _games.Where(g => g.Id == DeleteGameModel.GameId).FirstOrDefault();
 
-        if (_selectedGame.User.Email != DeleteGameModel.Password)
+        if (selectedGame.Password != DeleteGameModel.Password)
         {
             _alertService.Add(AlertType.Error, "Wrong password.");
             return;
         }
 
-        _selectedGame.Active = false;
+        await DeleteGameAsync(selectedGame);
 
-        await _gameService.PutAsync(_selectedGame);
+        /*
+        selectedGame.Active = false;
+        await _gameService.PutAsync(selectedGame);
+        */
 
         _alertService.Add(AlertType.Success, "The game was deleted.");
+        await _redirectService.RedirectToAsync("/service/delete");
     }
 
-    
+    private async Task DeleteGameAsync(Game game) 
+    {
+        var groupsToBeDeleted =  await _groupService.ListAsync(g => g.Game.Id == game.Id);
+
+        var itemsToBeDeleted = await _itemService.ListAsync(i => i.Group.Game.Id == game.Id);
+
+        itemsToBeDeleted.ForEach(async i =>  await _itemService.DeleteAsync(i));
+
+        groupsToBeDeleted.ForEach(async g => await _groupService.DeleteAsync(g));
+
+        await _gameService.DeleteAsync(game);
+    }
 } 

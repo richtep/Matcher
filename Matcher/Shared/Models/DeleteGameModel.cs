@@ -5,10 +5,10 @@ namespace Matcher.Shared.Models;
 public class DeleteGameModel 
 {
     [Required]
-    public string Password { get; set; }
+    public long GameId { get; set; }
+
 
     [Required]
-    public string GameName { get; set; }
-
+    public string Password { get; set; }
 }
 
