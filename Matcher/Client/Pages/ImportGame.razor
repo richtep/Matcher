@@ -18,8 +18,6 @@
 
 <br/><br/>
 
-
-
 <EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
                         <DataAnnotationsValidator />
                         <div class="mt-2">
@@ -47,7 +45,6 @@
                                 @bind-value="SignUpModel.NickName" />
                         </div>
                         
-
                         <div class="mb-3">
                             <label class="form-label" for="card-email">Contact email address</label>
                             <input class="form-control" type="email" autocomplete="on"
@@ -70,10 +67,9 @@
                             </div>
                         </div>
                         
-                        
                         <div class="mb-3">
                             <button class="btn btn-primary d-block w-100 mt-3" type="submit"
-                                name="submit" disabled="@(!_importFileIsOk)">Create new game</button>
+                                name="submit">Create new game</button>
                         </div>
                     </EditForm>
 
@@ -84,8 +80,6 @@
         private const int MaxItems = 10;
         private const int MaxItemCharacters = 30;
         private const char Separator = ',';
-
-
 
     [Parameter]
     public SignUpModel SignUpModel { get; set; } = new();
@@ -105,7 +99,7 @@
 
             _lines = ParseFileToLines(_fileContent, out var reason);
 
-            if (_lines is null) _alertService.Add(AlertType.Error, $"Import file is wrong, because {reason}");
+            if (_lines is null) _alertService.Add(AlertType.Error, $"Import file is wrong, because {reason}.");
         }
         catch (Exception)
         {
@@ -117,20 +111,7 @@
     {
         try
         {
-            if (_lines is null)
-            {
-                _alertService.Add(AlertType.Error, "Import file is wrong.");
-                return;
-            }
-            
-            var game =  (await _gameService.ListAsync(g => g.Name == SignUpModel.GameName )).FirstOrDefault();
-            
-            if (game is not null)
-            {
-                _alertService.Add(AlertType.Error, "This name of the game already exists.");
-                return;
-            }
-
+            if (!(await ValidateInputFileAsync())) return;
 
             var user = (await _userService.ListAsync(u => u.Email == SignUpModel.Email)).FirstOrDefault();
 
@@ -139,11 +120,8 @@
                 user = new User { Nick = SignUpModel.NickName, Email = SignUpModel.Email};
                 user = await _userService.PutAsync(user);
             }
-
             
-
-
-            game = new Game { Name = SignUpModel.GameName, User = user, Password = SignUpModel.Password, Chemical=SignUpModel.Chemical};
+            var game = new Game { Name = SignUpModel.GameName, User = user, Password = SignUpModel.Password, Chemical=SignUpModel.Chemical};
             game = await _gameService.PutAsync(game);
 
             foreach (var line in _lines)
@@ -169,6 +147,34 @@
         _alertService.Add(AlertType.Success, "New game was created.");
     }
 
+    private async Task<bool> ValidateInputFileAsync()
+    {
+        if (!_importFileIsOk)
+        {
+            _alertService.Add(AlertType.Error, "Import file is wrong.");
+            return false;
+        }
+
+
+
+        if (_lines is null)
+        {
+            _alertService.Add(AlertType.Error, "Import file is wrong.");
+            return false;
+        }
+        
+        var game =  (await _gameService.ListAsync(g => g.Name == SignUpModel.GameName )).FirstOrDefault();
+            
+        if (game is not null)
+        {
+            _alertService.Add(AlertType.Error, "This name of the game already exists.");
+            return false;
+        }
+
+        return true;
+    }
+
+ 
     private List<string> ParseFileToLines(string content, out string reason)
     {
         _importFileIsOk = false;
@@ -188,6 +194,14 @@
             if (items.Count is < 2 or > MaxItems)
             {
                 reason = $"items count on each row should be between 2 and {MaxItems}";
+                return null;
+            }
+
+            var isUnique = items.Distinct().Count() == items.Count();
+
+            if (!isUnique)
+            {
+                reason = "all items must be unique.";
                 return null;
             }
 
