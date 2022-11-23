@@ -48,6 +48,6 @@
     private async Task StartGame(Game game) 
     {
         CurrentGame = game;
-        await _redirectService.RedirectToAsync("/current-game");
+        await _redirectService.RedirectToAsync($"/current-game/{game.Id}");
     }
 }

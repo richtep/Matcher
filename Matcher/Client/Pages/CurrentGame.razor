@@ -1,79 +1,113 @@
-﻿@page "/current-game";
+﻿@page "/current-game/{id:long}"
+@page "/current-game";
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 @using Matcher.Shared.Domain
 @using Matcher.Shared.Models
 @using System.Text.RegularExpressions;
+@using Group = Matcher.Shared.Domain.Group
 
+@inject GameService _gameService;
 @inject GroupService _groupService;
 @inject ItemService _itemService;
 @inject IRedirectService _redirectService;
 @inject IAlertService _alertService;
 
 
-@if (_game == null)
-{
-    _redirectService.RedirectToAsync("/");
-}
-else
+@if (_game != null)
 {
     <PageTitle>Matcher</PageTitle>
 
     <h1>@_game!.Name</h1>
-    
-    @foreach (var item in _gameStatusItemsMixed)
+
+    @if (!_gameStarted)
     {
-        switch (item.Status)
-        {
-            case 0:
-                ButtonClass = "btn btn-secondary";
-                break;
+        <label>Max number of Groups:</label>
+        <select @bind="@_maxGroups" id="source-language"
+                placeholder="Select">
 
-            case 1:
-                ButtonClass = "btn btn-primary";
-                break;
+            @for (var i = 2; i <= _gameItems.Count; i++)
+            {
+                <option value=@i>@i</option>
+            }
+        </select>
 
-            case 2:
-                ButtonClass = "btn btn-success";
-                continue;
-        }
-        
-        @if (@_game.Chemical == true) 
+        <div class="col-auto">
+            <button class="btn btn-success" disabled="@_startDisabled" @onclick="OnStartGameClick">Start game</button>
+        </div>
+    }
+
+    else
+    {
+        <div class="col-auto">
+            <button class="btn btn-success" @onclick="OnRestartGameClick">Restart game</button>
+        </div>
+        @* render unmatched items*@
+        @foreach (var item in _gameStatusItems)
         {
-            <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString)AddSubsript(item.Value))</button>
+            switch (item.Status)
+            {
+                case 0:
+                    ButtonClass = "btn btn-secondary";
+                    break;
+
+                case 1:
+                    ButtonClass = "btn btn-primary";
+                    break;
+
+                case 2:
+                    ButtonClass = "btn btn-success";
+                    continue;
+            }
+                
+            @if (@_game.Chemical == true) 
+            {
+                <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString)AddSubscript(item.Value))</button>
+            }
+            else
+            {
+                <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@item.Value</button>
+            }
         }
-        else
+    
+
+        @* render matched items per group*@
+        {_previousGroupId = 0;}
+        @foreach(var item in _gameStatusItems)
         {
-            <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@item.Value</button>
+            @if (_previousGroupId != item.Group.Id && item.Status == 2)
+            {
+                <br/><hr/>
+            }
+
+            @if (item.Status == 2)
+            {
+                @if (@_game.Chemical == true)
+                {
+                    <button style="margin:5px;" class="btn btn-success" id="@item.Id">@((MarkupString)AddSubscript(item.Value))</button>
+                }
+                else 
+                {
+                    <button style="margin:5px;" class="btn btn-success" id="@item.Id">@item.Value</button>
+                }
+            }
+            _previousGroupId = item.Group.Id;
         }
     }
-    
-    {_previousGroupId = 0;}
-    @foreach(var item in _gameStatusItems)
-    {
-        @if (_previousGroupId != item.Group.Id && item.Status == 2)
-        {
-        <br/><hr/>
-        }
 
-        @if (item.Status == 2)
-        {
-            @if (@_game.Chemical == true)
-            {
-                <button style="margin:5px;" class="btn btn-success" id="@item.Id">@((MarkupString)AddSubsript(item.Value))</button>
-            }
-            else 
-            {
-                <button style="margin:5px;" class="btn btn-success" id="@item.Id">@item.Value</button>
-            }
-        }
-        _previousGroupId = item.Group.Id;
-    }
 }
-
 
 @code
 {
+    [Parameter]
+    public long Id { get; set; }
+
+    private bool _gameStarted;
+
+    private bool _startDisabled = true;
+
+    private int _maxGroups = 3;
+
     private DateTime _startTime;
 
     private long _previousGroupId;
@@ -82,37 +116,75 @@ else
 
     private List<Item> _gameItems = new();
 
-    private readonly List<ItemStatusModel> _gameStatusItems = new();
-
-    private List<ItemStatusModel> _gameStatusItemsMixed = new();
+    private List<ItemStatusModel> _gameStatusItems = new();
 
     private string ButtonClass { get; set; }
 
-    private readonly Game _game = Index.CurrentGame;
+    private Game _game = Index.CurrentGame;
+
+    private List<Group> _groups;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (_game!=null) _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
+        if (_game == null) _game = (await _gameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
 
+       // if (_gameItems == null)
+        {
+            _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
+            _groups = await _groupService.ListAsync(g => g.Game.Id == _game.Id);
+        }
+
+        _startDisabled = false;
+    }
+    
+    private void InitializeNewGame()
+    {
+     
+        _groups = MixItems<Group>(_groups);
+
+        _groups = ReduceNumberOfItems<Group>(_groups, _maxGroups);
+
+        _gameItems = _gameItems.Where(i => _groups.Any(g => g.Id == i.Group.Id)).ToList();
+        
         foreach (var item in _gameItems) 
         {
             var itemStatus = new ItemStatusModel
-                {
-                    Id = item.Id,
-                    Group = item.Group,
-                    Value = item.Value,
-                    Status = 0
-                };
+            {
+                Id = item.Id,
+                Group = item.Group,
+                Value = item.Value,
+                Status = 0
+            };
 
             _gameStatusItems.Add(itemStatus);
         }
 
-        MixItems();
+        _gameStatusItems = MixItems<ItemStatusModel>(_gameStatusItems);
 
         _startTime = DateTime.Now;
     }
 
-    void OnItemClick(ItemStatusModel item)
+    private void OnStartGameClick()
+    {
+        _gameStarted = true;
+
+        InitializeNewGame();
+
+        StateHasChanged();
+    }
+
+    
+    private void OnRestartGameClick()
+    {
+        //_redirectService.RedirectToAsync($"/current-game/{Id}");
+
+        _gameStatusItems.ForEach(i => i.Status = 0);
+
+        StateHasChanged();
+    }
+
+
+    private void OnItemClick(ItemStatusModel item)
     {
         SetItemStatus(item);
 
@@ -155,10 +227,18 @@ else
         if (IsGameOver()) _alertService.Add(AlertType.Success, $"Game finished in {((DateTime.Now-_startTime).TotalMilliseconds)/1000} s");
     }
 
-    private void MixItems()
+    private static List<T> MixItems<T>(IEnumerable<T> items)
     {
-        _gameStatusItemsMixed = _gameStatusItems.OrderBy(i => Random.Next()).ToList();
+        return items.OrderBy(i => Random.Next()).ToList();
     }
+
+    private static List<T> ReduceNumberOfItems<T>(IEnumerable<T> items, int count)
+    {
+        return items.Take(count).ToList();
+    }
+
+
+
 
     private bool IsGameOver()
     {
@@ -173,7 +253,7 @@ else
         { @"^([a-zA-Z]+)([0-9]+)([(][a-zA-Z]+)([0-9])([)])([0-9]+)$","$1<sub>$2</sub>$3<sub>$4</sub>$5<sub>$6</sub>"}
     };
 
-    public string AddSubsript(string value)
+    public string AddSubscript(string value)
     {
         foreach (KeyValuePair<string, string> entry in reg)
         {
