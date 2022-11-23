@@ -42,7 +42,8 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        _games = await _gameService.ListAsync(); 
+        _games = await _gameService.ListAsync();
+        _games = _games.OrderBy(g => g.Name).ToList();
     }
 
     private async Task StartGame(Game game) 

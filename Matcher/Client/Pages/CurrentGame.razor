@@ -23,8 +23,7 @@
     @if (!_gameStarted)
     {
         <label>Maximum number of Groups: </label>
-        <select @bind="@_maxGroups" id="source-language"
-                placeholder="Select">
+        <select @bind="@_maxGroups" id="source-language">
 
             @for (var i = 2; i <= _groups?.Count; i++)
             {
@@ -102,7 +101,6 @@
             _previousGroupId = item.Group.Id;
         }
     }
-
 }
 
 @code
@@ -134,9 +132,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (_game == null) _game = (await _gameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
+        _game ??= (await _gameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
     
         _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
+        
         _groups = await _groupService.ListAsync(g => g.Game.Id == _game.Id);
 
         _startDisabled = false;
