@@ -22,16 +22,16 @@
 
     @if (!_gameStarted)
     {
-        <label>Max number of Groups:</label>
+        <label>Maximum number of Groups: </label>
         <select @bind="@_maxGroups" id="source-language"
                 placeholder="Select">
 
-            @for (var i = 2; i <= _gameItems.Count; i++)
+            @for (var i = 2; i <= _groups?.Count; i++)
             {
                 <option value=@i>@i</option>
             }
         </select>
-
+        <br/><br/>
         <div class="col-auto">
             <button class="btn btn-success" disabled="@_startDisabled" @onclick="OnStartGameClick">Start game</button>
         </div>
@@ -39,9 +39,15 @@
 
     else
     {
-        <div class="col-auto">
+        <div align="right"class="col-auto">
             <button class="btn btn-success" @onclick="OnRestartGameClick">Restart game</button>
+            <button class="btn btn-success" @onclick="InitializeNewGame">Load New Items</button>
         </div>
+
+
+
+        <br/>
+
         @* render unmatched items*@
         @foreach (var item in _gameStatusItems)
         {
@@ -59,21 +65,23 @@
                     ButtonClass = "btn btn-success";
                     continue;
             }
-                
-            @if (@_game.Chemical == true) 
+
+            @if (@_game.Chemical == true)
             {
-                <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString)AddSubscript(item.Value))</button>
+                <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString) AddSubscript(item.Value))</button>
             }
             else
             {
                 <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@item.Value</button>
             }
         }
-    
 
-        @* render matched items per group*@
-        {_previousGroupId = 0;}
-        @foreach(var item in _gameStatusItems)
+        @* render matched items per group *@
+        _previousGroupId = 0;
+    
+        var items = SortItemsByGroup(_gameStatusItems);
+        
+        @foreach(var item in items)
         {
             @if (_previousGroupId != item.Group.Id && item.Status == 2)
             {
@@ -124,29 +132,29 @@
 
     private List<Group> _groups;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
         if (_game == null) _game = (await _gameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
-
-       // if (_gameItems == null)
-        {
-            _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
-            _groups = await _groupService.ListAsync(g => g.Game.Id == _game.Id);
-        }
+    
+        _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
+        _groups = await _groupService.ListAsync(g => g.Game.Id == _game.Id);
 
         _startDisabled = false;
     }
     
+    protected override async Task OnParametersSetAsync() {}
+    
     private void InitializeNewGame()
     {
-     
-        _groups = MixItems<Group>(_groups);
+        var groups = MixItems<Group>(_groups);
 
-        _groups = ReduceNumberOfItems<Group>(_groups, _maxGroups);
+        groups = ReduceNumberOfItems<Group>(groups, _maxGroups);
 
-        _gameItems = _gameItems.Where(i => _groups.Any(g => g.Id == i.Group.Id)).ToList();
+        var items = _gameItems.Where(i => groups.Any(g => g.Id == i.Group.Id)).ToList();
         
-        foreach (var item in _gameItems) 
+        _gameStatusItems.Clear();
+
+        foreach (var item in items) 
         {
             var itemStatus = new ItemStatusModel
             {
@@ -163,7 +171,7 @@
 
         _startTime = DateTime.Now;
     }
-
+    
     private void OnStartGameClick()
     {
         _gameStarted = true;
@@ -173,17 +181,13 @@
         StateHasChanged();
     }
 
-    
     private void OnRestartGameClick()
     {
-        //_redirectService.RedirectToAsync($"/current-game/{Id}");
-
         _gameStatusItems.ForEach(i => i.Status = 0);
 
         StateHasChanged();
     }
-
-
+    
     private void OnItemClick(ItemStatusModel item)
     {
         SetItemStatus(item);
@@ -191,6 +195,12 @@
         RemoveCompletedItems();
 
         StateHasChanged();
+    }
+
+    private List<ItemStatusModel> SortItemsByGroup( List<ItemStatusModel> items)
+    {
+        items = items.OrderBy(i => i.Id).ToList();
+        return items.OrderBy(i => i.Group.Id).ToList();
     }
 
     void SetItemStatus(ItemStatusModel item)
@@ -236,15 +246,11 @@
     {
         return items.Take(count).ToList();
     }
-
-
-
-
+    
     private bool IsGameOver()
     {
         return _gameStatusItems.All(s => s.Status == 2);
     }
-
     
     private Dictionary<string, string> reg = new()
     {
@@ -264,8 +270,6 @@
                 return regex.Replace(value, entry.Value);
             }
         }
-
         return value;
       }
 }
-
