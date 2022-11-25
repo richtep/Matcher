@@ -1,5 +1,7 @@
 ﻿@page "/current-game/{id:long}"
 @page "/current-game";
+@using System;
+@using System.Text
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 @using Matcher.Shared.Domain
@@ -254,24 +256,24 @@
         return _gameStatusItems.All(s => s.Status == 2);
     }
     
-    private Dictionary<string, string> reg = new()
-    {
-        { @"^([a-zA-Z]+)([0-9]+)([a-zA-Z]+)([0-9]+)$","$1<sub>$2</sub>$3<sub>$4</sub>"},
-        { @"^([a-zA-Z]+)([a-zA-Z]+)([0-9]+)$","$1$2<sub>$3</sub>"},
-        { @"^([a-zA-Z]+)([0-9]+)([(][a-zA-Z]+)([0-9])([)])([0-9]+)$","$1<sub>$2</sub>$3<sub>$4</sub>$5<sub>$6</sub>"}
-    };
-
     public string AddSubscript(string value)
     {
-        foreach (KeyValuePair<string, string> entry in reg)
-        {
-            var regex = new Regex(entry.Key, RegexOptions.Compiled);
+        var characters = value.ToCharArray();
 
-            if (regex.IsMatch(value)) 
+        StringBuilder result = new();
+
+        foreach (var s in characters)
+        {
+            if (Char.IsDigit(s))
             {
-                return regex.Replace(value, entry.Value);
+                string str = $"<sub>{s}</sub>";
+                result.Append(str);
+            }
+            else
+            {
+                result.Append(s);
             }
         }
-        return value;
+        return result.ToString();
       }
 }
