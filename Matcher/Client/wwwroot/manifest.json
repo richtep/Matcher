@@ -1,6 +1,6 @@
 {
-  "name": "Matcher",
-  "short_name": "Matcher",
+  "name": "Memorizer",
+  "short_name": "Memorizer",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
