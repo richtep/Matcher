@@ -20,5 +20,10 @@ public class SignUpModel
     public string NickName { get; set; }
 
     public bool Chemical { get; set; }
+
+    public bool Unique { get; set; } = true;
+
+
+
 }
 

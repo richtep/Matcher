@@ -25,8 +25,13 @@
                         </div>
                         
                         <div class="mb-3">
-                        <label class="form-label">Import file:  </label>
-                        <label class="form-label" style="margin:16px;"> <InputFile OnChange="@LoadLines"/> </label>
+                            <label class="form-label">Import file:  </label>
+                            <label class="form-label" style="margin:16px;"> <InputFile OnChange="@LoadLines"/> </label>
+                        </div>
+                        
+                        <div class="mb-3">
+                        <label class="form-label" for="card-name">Verify that out-of-group items are unique</label>
+                            <input  type="checkbox" checked @bind-value="SignUpModel.Unique"/>
                         </div>
 
                         <div class="mb-3">
@@ -198,11 +203,9 @@
                 return null;
             }
 
-            //var isUnique = items.Distinct().Count() == items.Count();
-
-            if (!IsUnique(_lines))
+            if (!IsUnique(_lines, out var duplicateValue) && SignUpModel.Unique)
             {
-                reason = "all items must be unique";
+                reason = $"all items outside groups must be unique, item <{duplicateValue}> is not";
                 return null;
             }
 
@@ -216,12 +219,31 @@
         return _lines;
     }
 
-    private bool IsUnique(List<string> lines)
+    private static bool IsUnique(IEnumerable<string> lines, out string duplicateValue)
     {
-        var items = lines.Select(l => l.Split(","));
+        duplicateValue = string.Empty;
 
-        return items.Distinct().Count() == items.Count();
+        var items = new List<Item>();
 
+        var groupId = 0;
+        
+
+        foreach (var line in lines)
+        {
+            groupId++;
+
+            var group = new Group { Id= groupId, Game = new Game { Name = "GameUnderImport", User = new User { Email="e" }, Password = "p" } };
+            
+            var rawItems = line.Split(Separator).ToList();
+
+            items.AddRange(rawItems.Select(item => new Item {Value = item, Group = group}));
+        }
+        
+        foreach (var item in from item in items let reducedItems = items.Where(i => i.Group.Id != item.Group.Id) where reducedItems.Any(i => i.Value == item.Value) select item)
+        {
+            duplicateValue = item.Value;
+            return false;
+        }
+        return true;
     }
-
 } 

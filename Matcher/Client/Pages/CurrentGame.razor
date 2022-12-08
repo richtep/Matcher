@@ -42,9 +42,9 @@
     {
         
         <br/>
-        <div align="right"class="col-auto">
+        <div align="right" class="col-auto">
             <button class="btn btn-success" @onclick="OnRestartGameClick">Restart game</button>
-            <button class="btn btn-success" @onclick="InitializeNewGame">Load New Items</button>
+            <button class="btn btn-success" @onclick="LoadNewItems">Load New Items</button>
         </div>
         <br/>
 
@@ -117,7 +117,7 @@
 
     private bool _startDisabled = true;
 
-    private int _maxGroups = 3;
+    private int _maxGroups = 2;
 
     private DateTime _startTime;
 
@@ -146,7 +146,12 @@
         _startDisabled = false;
     }
     
-    protected override async Task OnParametersSetAsync() {}
+    private void LoadNewItems()
+    {
+        _gameStarted = false;
+
+        InitializeNewGame();
+    }
     
     private void InitializeNewGame()
     {
@@ -248,7 +253,8 @@
 
     private static List<T> ReduceNumberOfItems<T>(IEnumerable<T> items, int count)
     {
-        return items.Take(count).ToList();
+        var result = items.Take(count).ToList();
+        return result;
     }
     
     private bool IsGameOver()
@@ -266,7 +272,7 @@
         {
             if (Char.IsDigit(s))
             {
-                string str = $"<sub>{s}</sub>";
+                var str = $"<sub>{s}</sub>";
                 result.Append(str);
             }
             else
