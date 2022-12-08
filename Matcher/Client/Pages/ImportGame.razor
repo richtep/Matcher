@@ -76,9 +76,9 @@
 
 @code 
 {
-        private const int MaxGroups = 50;
-        private const int MaxItems = 10;
-        private const int MaxItemCharacters = 30;
+        private const int MaxGroups = 700;
+        private const int MaxItems = 20;
+        private const int MaxItemCharacters = 200;
         private const char Separator = ',';
 
     [Parameter]
@@ -183,6 +183,7 @@
 
         _lines = _lines.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
 
+
         if (_lines.Count > MaxGroups)
         {
             reason = $"lines count exceeded maximum limit of Groups ({MaxGroups})";
@@ -197,11 +198,11 @@
                 return null;
             }
 
-            var isUnique = items.Distinct().Count() == items.Count();
+            //var isUnique = items.Distinct().Count() == items.Count();
 
-            if (!isUnique)
+            if (!IsUnique(_lines))
             {
-                reason = "all items must be unique.";
+                reason = "all items must be unique";
                 return null;
             }
 
@@ -214,4 +215,13 @@
         _importFileIsOk = true;
         return _lines;
     }
+
+    private bool IsUnique(List<string> lines)
+    {
+        var items = lines.Select(l => l.Split(","));
+
+        return items.Distinct().Count() == items.Count();
+
+    }
+
 } 
