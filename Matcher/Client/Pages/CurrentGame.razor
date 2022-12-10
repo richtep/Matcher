@@ -1,13 +1,14 @@
 ﻿@page "/current-game/{id:long}"
 @page "/current-game";
-@using System;
 @using System.Text
+@using EntitySystem.Client.Domain.Data.Condition
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
+@using EntitySystem.Shared.Query
 @using Matcher.Shared.Domain
 @using Matcher.Shared.Models
-@using System.Text.RegularExpressions;
 @using Group = Matcher.Shared.Domain.Group
+@using System.Linq.Expressions
 
 @inject GameService _gameService;
 @inject GroupService _groupService;
@@ -60,11 +61,9 @@
                 case 0:
                     ButtonClass = "btn btn-secondary";
                     break;
-
                 case 1:
                     ButtonClass = "btn btn-primary";
                     break;
-
                 case 2:
                     ButtonClass = "btn btn-success";
                     continue;
@@ -139,8 +138,14 @@
     {
         _game ??= (await _gameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
     
-        _gameItems = await _itemService.ListAsync(i => i.Group.Game.Id == _game.Id);
-        
+        var guid = await _itemService.QueryAsync();
+
+        var query = new Query { Take = (ImportGame.MaxItemsInOneGroup*ImportGame.MaxGroups) };
+
+        _gameItems = (await _itemService.ListAsync(guid, query)).Page;
+
+        _gameItems = _gameItems.Where(i => i.Group.Game.Id == _game.Id).ToList();
+
         _groups = await _groupService.ListAsync(g => g.Game.Id == _game.Id);
 
         _startDisabled = false;
@@ -282,4 +287,6 @@
         }
         return result.ToString();
       }
+
+   
 }

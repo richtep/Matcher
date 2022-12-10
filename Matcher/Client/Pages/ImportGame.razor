@@ -81,8 +81,8 @@
 
 @code 
 {
-        private const int MaxGroups = 700;
-        private const int MaxItems = 20;
+    public const int MaxGroups = 700;
+        public const int MaxItemsInOneGroup = 20;
         private const int MaxItemCharacters = 200;
         private const char Separator = ',';
 
@@ -197,9 +197,9 @@
 
         foreach (var items in _lines.Select(line => line.Split(Separator).ToList()))
         {
-            if (items.Count is < 2 or > MaxItems)
+            if (items.Count is < 2 or > MaxItemsInOneGroup)
             {
-                reason = $"items count on each row should be between 2 and {MaxItems}";
+                reason = $"items count on each row should be between 2 and {MaxItemsInOneGroup}";
                 return null;
             }
 
