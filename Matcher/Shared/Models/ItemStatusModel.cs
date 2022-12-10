@@ -15,6 +15,8 @@ public class ItemStatusModel
     public  string Value { get; set; }
     [Required]
     public  int Status { get; set; }
+
+    public int RoundNo { get; set; }
 }
 
 

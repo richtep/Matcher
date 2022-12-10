@@ -1,20 +1,18 @@
 ﻿@page "/current-game/{id:long}"
 @page "/current-game";
 @using System.Text
-@using EntitySystem.Client.Domain.Data.Condition
 @using Matcher.Client.Services;
 @using EntitySystem.Client.Services;
 @using EntitySystem.Shared.Query
 @using Matcher.Shared.Domain
 @using Matcher.Shared.Models
 @using Group = Matcher.Shared.Domain.Group
-@using System.Linq.Expressions
 
-@inject GameService _gameService;
-@inject GroupService _groupService;
-@inject ItemService _itemService;
-@inject IRedirectService _redirectService;
-@inject IAlertService _alertService;
+@inject GameService GameService;
+@inject GroupService GroupService;
+@inject ItemService ItemService;
+@inject IRedirectService RedirectService;
+@inject IAlertService AlertService;
 
 
 @if (_game != null)
@@ -54,7 +52,8 @@
         <br/><br/>
 
         @* render unmatched items*@
-        @foreach (var item in _gameStatusItems)
+        
+        @foreach (var item in _gameStatusItems.Where(gsi => gsi.RoundNo ==_currentRound))
         {
             switch (item.Status)
             {
@@ -112,6 +111,8 @@
     [Parameter]
     public long Id { get; set; }
 
+    private int _currentRound =1;
+
     private bool _gameStarted;
 
     private bool _startDisabled = true;
@@ -136,17 +137,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _game ??= (await _gameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
+        _game ??= (await GameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
     
-        var guid = await _itemService.QueryAsync();
+        var guid = await ItemService.QueryAsync();
 
         var query = new Query { Take = (ImportGame.MaxItemsInOneGroup*ImportGame.MaxGroups) };
 
-        _gameItems = (await _itemService.ListAsync(guid, query)).Page;
+        _gameItems = (await ItemService.ListAsync(guid, query)).Page;
 
         _gameItems = _gameItems.Where(i => i.Group.Game.Id == _game.Id).ToList();
 
-        _groups = await _groupService.ListAsync(g => g.Game.Id == _game.Id);
+        _groups = await GroupService.ListAsync(g => g.Game.Id == _game.Id);
 
         _startDisabled = false;
     }
@@ -162,24 +163,36 @@
     {
         var groups = MixItems<Group>(_groups);
 
-        groups = ReduceNumberOfItems<Group>(groups, _maxGroups);
+        var rounds = _groups.Count / _maxGroups;
 
-        var items = _gameItems.Where(i => groups.Any(g => g.Id == i.Group.Id)).ToList();
+        if (_groups.Count % _maxGroups > 0) rounds++;
         
+        var items = _gameItems.Where(i => groups.Any(g => g.Id == i.Group.Id)).ToList();
+
         _gameStatusItems.Clear();
 
-        foreach (var item in items) 
+        var groupIndex = 1;
+        var round = 1;
+        foreach (var group in groups)
         {
-            var itemStatus = new ItemStatusModel
+            foreach (var item in items.Where(i=>i.Group.Id == group.Id))
             {
-                Id = item.Id,
-                Group = item.Group,
-                Value = item.Value,
-                Status = 0
-            };
+                var itemStatus = new ItemStatusModel
+                {
+                    Id = item.Id,
+                    Group = item.Group,
+                    Value = item.Value,
+                    Status = 0,
+                    RoundNo = round
+                };
+                _gameStatusItems.Add(itemStatus);
+            }
+            
+            if (groupIndex % _maxGroups == 0) round++;
 
-            _gameStatusItems.Add(itemStatus);
+            groupIndex++;
         }
+
 
         _gameStatusItems = MixItems<ItemStatusModel>(_gameStatusItems);
 
@@ -247,8 +260,8 @@
         {
             item.Status = 2;
         }
-
-        if (IsGameOver()) _alertService.Add(AlertType.Success, $"Game finished in {((DateTime.Now-_startTime).TotalMilliseconds)/1000} s");
+        if (IsRoundFinished(_currentRound)) _currentRound++;
+        if (IsGameOver()) AlertService.Add(AlertType.Success, $"Game finished in {((DateTime.Now-_startTime).TotalMilliseconds)/1000} s");
     }
 
     private static List<T> MixItems<T>(IEnumerable<T> items)
@@ -265,6 +278,11 @@
     private bool IsGameOver()
     {
         return _gameStatusItems.All(s => s.Status == 2);
+    }
+
+    private bool IsRoundFinished(int round)
+    {
+        return _gameStatusItems.Where(gsi=>gsi.RoundNo==round).All(s => s.Status == 2);
     }
     
     public string AddSubscript(string value)
