@@ -33,6 +33,26 @@
             }
         </select>
         <br/><br/>
+
+        @if (_groups != null)
+        {
+            @foreach (var group in _groups)
+            {
+                <span>
+                    <input type="checkbox" checked @bind-value="() => @GroupCheckChanged(@group.Id)" />
+
+                    @foreach (var item in _gameItems.Where(i => i.Group.Id == group.Id))
+                    {
+                        <span>@item.Value |</span>
+
+                    }
+                </span>
+            }
+        }
+        
+        <br />
+        <br />
+
         <div class="col-auto">
             <button class="btn btn-success" disabled="@_startDisabled" @onclick="OnStartGameClick">Start game</button>
         </div>
@@ -42,10 +62,12 @@
     {
         
         <br/>
+        @*
         <div align="right" class="col-auto">
             <button class="btn btn-success" @onclick="OnRestartGameClick">Restart game</button>
             <button class="btn btn-success" @onclick="LoadNewItems">Load New Items</button>
         </div>
+        *@
         <br/>
 
         <i>Click on items belonging together:</i>
@@ -201,7 +223,12 @@
 
         _startTime = DateTime.Now;
     }
-    
+
+    private void GroupCheckChanged(long groupId)
+    {
+        //todo https://stackoverflow.com/questions/71224684/blazor-checkbox-two-way-binding-and-change-event
+    }
+
     private void OnStartGameClick()
     {
         _gameStarted = true;
