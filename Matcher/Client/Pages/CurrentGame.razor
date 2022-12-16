@@ -36,6 +36,9 @@
 
         @if (_groups != null)
         {
+            <span><input type="checkbox" @bind="@_selectAll" @onclick="@SelectAll"> Select All</span>
+            <br/><br/>
+
             @foreach (var group in _groups)
             {
                 <span>
@@ -45,7 +48,7 @@
                         <span> @item.Value</span>
                         if (item.Id != _gameItems.LastOrDefault(i => i.Group.Id == group.Id).Id)
                         {
-                            <span> / </span>
+                            <span> | </span>
                         }
                     }
                     <br />
@@ -63,12 +66,9 @@
     else
     {
         <br/>
-        @*
         <div align="right" class="col-auto">
             <button class="btn btn-success" @onclick="OnRestartGameClick">Restart game</button>
-            <button class="btn btn-success" @onclick="LoadNewItems">Load New Items</button>
         </div>
-        *@
         <br/>
 
         <i>Click on items belonging together:</i>
@@ -137,6 +137,8 @@
 
     private int _currentRound =1;
 
+    private bool _selectAll = true;
+
     private bool _gameStarted;
 
     private bool _startDisabled = true;
@@ -178,13 +180,6 @@
         _groups.ForEach(g => g.Checked = true);
 
         _startDisabled = false;
-    }
-    
-    private void LoadNewItems()
-    {
-        _gameStarted = false;
-
-        InitializeNewGame();
     }
     
     private void InitializeNewGame()
@@ -239,6 +234,10 @@
     private void OnRestartGameClick()
     {
         _gameStatusItems.ForEach(i => i.State = 0);
+
+        _currentRound = 1;
+
+        _startTime = DateTime.Now;
 
         StateHasChanged();
     }
@@ -333,4 +332,18 @@
         }
         return result.ToString();
       }
+
+    private void SelectAll()
+    {
+        if (_selectAll)
+        {
+            _groups.ForEach(g => g.Checked = false);
+        }
+        else
+        {
+            _groups.ForEach(g => g.Checked = true);
+        }
+
+        StateHasChanged();
+    }
 }
