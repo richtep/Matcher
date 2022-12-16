@@ -7,4 +7,6 @@ public class Group : Entity
 {
     [Required]
     public virtual Game Game {get; set;}
+
+    public virtual bool Checked { get; set; } = true;
 }

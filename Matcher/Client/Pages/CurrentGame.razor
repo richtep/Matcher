@@ -39,17 +39,19 @@
             @foreach (var group in _groups)
             {
                 <span>
-                    <input type="checkbox" checked @bind-value="() => @GroupCheckChanged(@group.Id)" />
-
+                    <input type="checkbox" @bind="group.Checked">&nbsp;&nbsp;&nbsp;&nbsp;
                     @foreach (var item in _gameItems.Where(i => i.Group.Id == group.Id))
                     {
-                        <span>@item.Value |</span>
-
+                        <span> @item.Value</span>
+                        if (item.Id != _gameItems.LastOrDefault(i => i.Group.Id == group.Id).Id)
+                        {
+                            <span> / </span>
+                        }
                     }
+                    <br />
                 </span>
             }
         }
-        
         <br />
         <br />
 
@@ -60,7 +62,6 @@
 
     else
     {
-        
         <br/>
         @*
         <div align="right" class="col-auto">
@@ -78,7 +79,7 @@
         
         @foreach (var item in _gameStatusItems.Where(gsi => gsi.RoundNo ==_currentRound))
         {
-            switch (item.Status)
+            switch (item.State)
             {
                 case 0:
                     ButtonClass = "btn btn-secondary";
@@ -93,11 +94,11 @@
 
             @if (@_game.Chemical == true)
             {
-                <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@((MarkupString) AddSubscript(item.Value))</button>
+                <button style="margin: 5px;" class="@ButtonClass" id="@item.Item.Id" @onclick="() => OnItemClick(item)">@((MarkupString)AddSubscript(item.Item.Value))</button>
             }
             else
             {
-                <button style="margin: 5px;" class="@ButtonClass" id="@item.Id" @onclick="() => OnItemClick(item)">@item.Value</button>
+                <button style="margin: 5px;" class="@ButtonClass" id="@item.Item.Id" @onclick="() => OnItemClick(item)">@item.Item.Value</button>
             }
         }
 
@@ -108,23 +109,23 @@
         
         @foreach(var item in items)
         {
-            @if (_previousGroupId != item.Group.Id && item.Status == 2)
+            @if (_previousGroupId != item.Item.Group.Id && item.State == 2)
             {
                 <br/><hr/>
             }
 
-            @if (item.Status == 2)
+            @if (item.State == 2)
             {
                 @if (@_game.Chemical == true)
                 {
-                    <button style="margin:5px;" class="btn btn-success" id="@item.Id">@((MarkupString)AddSubscript(item.Value))</button>
+                    <button style="margin:5px;" class="btn btn-success" id="@item.Item.Id">@((MarkupString)AddSubscript(item.Item.Value))</button>
                 }
                 else 
                 {
-                    <button style="margin:5px;" class="btn btn-success" id="@item.Id">@item.Value</button>
+                    <button style="margin:5px;" class="btn btn-success" id="@item.Item.Id">@item.Item.Value</button>
                 }
             }
-            _previousGroupId = item.Group.Id;
+            _previousGroupId = item.Item.Group.Id;
         }
     }
 }
@@ -151,7 +152,7 @@
     private List<Item> _gameItems = new();
 
     private List<ItemStatusModel> _gameStatusItems = new();
-
+    
     private string ButtonClass { get; set; }
 
     private Game _game = Index.CurrentGame;
@@ -171,8 +172,10 @@
         };
 
         _gameItems = (await ItemService.ListAsync(guid, query)).Page;
-
+        
         _groups = await GroupService.ListAsync(g => g.Game.Id == _game.Id);
+
+        _groups.ForEach(g => g.Checked = true);
 
         _startDisabled = false;
     }
@@ -198,18 +201,17 @@
 
         var groupIndex = 1;
         var round = 1;
-        foreach (var group in groups)
+        foreach (var group in groups.Where(g => g.Checked == true))
         {
-            foreach (var item in items.Where(i=>i.Group.Id == group.Id))
+            foreach (var item in items.Where(i=> i.Group.Id == group.Id))
             {
                 var itemStatus = new ItemStatusModel
                 {
-                    Id = item.Id,
-                    Group = item.Group,
-                    Value = item.Value,
-                    Status = 0,
+                    Item = item,
+                    State = 0,
                     RoundNo = round
                 };
+
                 _gameStatusItems.Add(itemStatus);
             }
             
@@ -224,10 +226,6 @@
         _startTime = DateTime.Now;
     }
 
-    private void GroupCheckChanged(long groupId)
-    {
-        //todo https://stackoverflow.com/questions/71224684/blazor-checkbox-two-way-binding-and-change-event
-    }
 
     private void OnStartGameClick()
     {
@@ -240,7 +238,7 @@
 
     private void OnRestartGameClick()
     {
-        _gameStatusItems.ForEach(i => i.Status = 0);
+        _gameStatusItems.ForEach(i => i.State = 0);
 
         StateHasChanged();
     }
@@ -256,39 +254,39 @@
 
     private List<ItemStatusModel> SortItemsByGroup( List<ItemStatusModel> items)
     {
-        items = items.OrderBy(i => i.Id).ToList();
-        return items.OrderBy(i => i.Group.Id).ToList();
+        items = items.OrderBy(i => i.Item.Id).ToList();
+        return items.OrderBy(i => i.Item.Group.Id).ToList();
     }
 
     void SetItemStatus(ItemStatusModel item)
     {
-        switch (item.Status)
+        switch (item.State)
         {
             case 0:
-                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id)!.Status = 1;
+                _gameStatusItems.FirstOrDefault(si => si.Item.Id == item.Item.Id)!.State = 1;
                 break;
 
             case 1:
-                _gameStatusItems.FirstOrDefault(si => si.Id == item.Id)!.Status = 0;
+                _gameStatusItems.FirstOrDefault(si => si.Item.Id == item.Item.Id)!.State = 0;
                 break;
         }
     }
 
     private void RemoveCompletedItems()
     {
-        var selectedItems = _gameStatusItems.Where(s => s.Status == 1).ToList();
+        var selectedItems = _gameStatusItems.Where(s => s.State == 1).ToList();
 
         if (selectedItems.Count < 1) return; 
 
-        var firstGroupId = selectedItems.FirstOrDefault()!.Group.Id;
+        var firstGroupId = selectedItems.FirstOrDefault()!.Item.Group.Id;
 
-        var itemsInSelectedGroup = _gameStatusItems.Where(s => s.Group.Id == firstGroupId).ToList();
+        var itemsInSelectedGroup = _gameStatusItems.Where(s => s.Item.Group.Id == firstGroupId).ToList();
 
-        if ((itemsInSelectedGroup.Any(isg => isg.Status != 1)) || (selectedItems.Any(si => si.Group.Id != firstGroupId))) return;
+        if ((itemsInSelectedGroup.Any(isg => isg.State != 1)) || (selectedItems.Any(si => si.Item.Group.Id != firstGroupId))) return;
 
         foreach (var item in selectedItems)
         {
-            item.Status = 2;
+            item.State = 2;
         }
         if (IsRoundFinished(_currentRound)) _currentRound++;
         if (IsGameOver()) AlertService.Add(AlertType.Success, $"Game finished in {((DateTime.Now-_startTime).TotalMilliseconds)/1000} s");
@@ -307,12 +305,12 @@
     
     private bool IsGameOver()
     {
-        return _gameStatusItems.All(s => s.Status == 2);
+        return _gameStatusItems.All(s => s.State == 2);
     }
 
     private bool IsRoundFinished(int round)
     {
-        return _gameStatusItems.Where(gsi=>gsi.RoundNo==round).All(s => s.Status == 2);
+        return _gameStatusItems.Where(gsi=>gsi.RoundNo==round).All(s => s.State == 2);
     }
     
     public string AddSubscript(string value)
@@ -335,6 +333,4 @@
         }
         return result.ToString();
       }
-
-   
 }
