@@ -8,6 +8,7 @@
 @using Matcher.Shared.Domain
 @using Matcher.Shared.Models
 @using Group = Matcher.Shared.Domain.Group
+@using System.Globalization
 
 @inject GameService GameService;
 @inject GroupService GroupService;
@@ -289,8 +290,16 @@
         {
             item.State = 2;
         }
+
+
         if (IsRoundFinished(_currentRound)) _currentRound++;
-        if (IsGameOver()) AlertService.Add(AlertType.Success, $"Game finished in {((DateTime.Now-_startTime).TotalMilliseconds)/1000} s");
+        
+        var gameTime = (DateTime.Now - _startTime);
+
+        var timeFormat = gameTime.TotalSeconds < 60 ? gameTime.ToString(@"s\.fff\s") :  gameTime.ToString(@"m\m\i\n\ ss\.fff\s");
+
+        if (IsGameOver()) AlertService.Add(AlertType.Success, $"Game finished in {timeFormat}");
+
     }
 
     private static List<T> MixItems<T>(IEnumerable<T> items)
