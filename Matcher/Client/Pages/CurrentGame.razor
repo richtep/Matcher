@@ -24,6 +24,10 @@
 
     @if (!_gameStarted)
     {
+        <div class="col-auto">
+            <button class="btn btn-success" disabled="@_startDisabled" @onclick="OnStartGameClick">Start game</button>
+        </div>
+
         <label>Maximum number of Groups: </label>
         <select @bind="@_maxGroups" id="source-language">
 
@@ -57,10 +61,6 @@
         }
         <br />
         <br />
-
-        <div class="col-auto">
-            <button class="btn btn-success" disabled="@_startDisabled" @onclick="OnStartGameClick">Start game</button>
-        </div>
     }
 
     else
@@ -143,7 +143,7 @@
 
     private bool _startDisabled = true;
 
-    private int _maxGroups = 2;
+    private int _maxGroups = 5;
 
     private DateTime _startTime;
 
@@ -238,6 +238,8 @@
         _currentRound = 1;
 
         _startTime = DateTime.Now;
+
+        InitializeNewGame();
 
         StateHasChanged();
     }
