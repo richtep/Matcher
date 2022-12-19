@@ -1,10 +1,7 @@
-using EntitySystem.Server.Extensions;
 using EntitySystem.Server.Fluent;
 using FluentNHibernate.Cfg.Db;
 using Matcher.Server.Services;
-using Matcher.Shared;
 using Matcher.Shared.Domain;
-using Microsoft.AspNetCore.ResponseCompression;
 using NHibernate.Dialect;
 
 var builder = WebApplication.CreateBuilder(args);

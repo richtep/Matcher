@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Matcher.Shared.Domain;
 
 namespace Matcher.Shared.Models;
 
@@ -12,7 +13,10 @@ public class SignUpModel
 
     [Required]
     public string Password { get; set; }
-    
+
+    [Required]
+    public Folder Folder { get; set; }
+
     [CompareProperty("Password", ErrorMessage = "Passwords must be the same.")]
     public string Confirm { get; set; }
     
@@ -22,8 +26,5 @@ public class SignUpModel
     public bool Chemical { get; set; }
 
     public bool Unique { get; set; } = true;
-
-
-
 }
 

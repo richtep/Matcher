@@ -10,6 +10,8 @@
 @inject GroupService _groupService;
 @inject ItemService _itemService;
 @inject UserService _userService;
+@inject FolderService _folderService;
+
 @inject IRedirectService _redirectService;
 
 <PageTitle>Create new game</PageTitle>
@@ -25,6 +27,28 @@
                         </div>
                         
                         <div class="mb-3">
+                            <label class="form-label" for="card-name">Name of the game</label>
+                            <input class="form-control" type="text" autocomplete="on" id="card-name"
+                                   @bind-value="SignUpModel.GameName"/>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="card-name">Select folder name</label>
+                        <InputSelect @bind-Value="SignUpModel.Folder">
+                                @foreach (var folder in _folders.Where(f => f.ParentFolder is null))
+                                {
+                                    <option value="@folder.Id">@folder.Name</option>
+
+                                    
+
+                                 
+
+                                }
+                        </InputSelect>
+                        </div>
+                        
+
+                        <div class="mb-3">
                             <label class="form-label">Import file:  </label>
                             <label class="form-label" style="margin:16px;"> <InputFile OnChange="@LoadLines"/> </label>
                         </div>
@@ -39,11 +63,7 @@
                             <input  type="checkbox"  @bind-value="SignUpModel.Chemical"/>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label" for="card-name">Name of the game</label>
-                            <input class="form-control" type="text" autocomplete="on" id="card-name"
-                                   @bind-value="SignUpModel.GameName"/>
-                        </div>
+                        
                         <div class="mb-3">
                             <label class="form-label" for="card-name">Author</label>
                             <input class="form-control" type="text" autocomplete="on" id="card-name"
@@ -95,6 +115,18 @@
 
     private List<string> _lines = new();
 
+    private List<Folder> _folders;
+
+    private List<Folder> _subFolders;
+
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        _folders = await _folderService.ListAsync();
+
+        _subFolders = _folders.Where(f => f.ParentFolder is null).ToList();
+
+    }
 
     private async Task LoadLines(InputFileChangeEventArgs e) 
     {
@@ -111,6 +143,7 @@
             throw;
         }
     }
+
 
     private async Task OnSubmit()
     {
@@ -159,9 +192,7 @@
             _alertService.Add(AlertType.Error, "Import file is wrong.");
             return false;
         }
-
-
-
+        
         if (_lines is null)
         {
             _alertService.Add(AlertType.Error, "Import file is wrong.");
@@ -217,6 +248,18 @@
         reason = "File was successfully parsed to lines.";
         _importFileIsOk = true;
         return _lines;
+    }
+
+    private List<Folder> GetSubFolders(Folder folder)
+    {
+        List<Folder> subFolders = new();
+
+        foreach (var subFolder in _folders.Where(f => f.ParentFolder.Id == folder.Id))
+        {
+            subFolders.Add(subFolder);
+        }
+
+        return subFolders;
     }
 
     private static bool IsUnique(IEnumerable<string> lines, out string duplicateValue)

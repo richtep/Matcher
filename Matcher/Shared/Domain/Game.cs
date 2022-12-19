@@ -9,7 +9,11 @@ public class Game : Entity
     public virtual string Name { get; set; }
     [Required]
     public virtual User User { get; set; }
-        
+
+    [Required]
+    public virtual Folder Folder { get; set; }
+
+
     [Required]
     public virtual string Password { get; set; }
 

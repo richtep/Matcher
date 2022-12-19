@@ -75,11 +75,6 @@
 
         await DeleteGameAsync(selectedGame);
 
-        /*
-        selectedGame.Active = false;
-        await _gameService.PutAsync(selectedGame);
-        */
-
         _alertService.Add(AlertType.Success, "The game was deleted.");
         await _redirectService.RedirectToAsync("/");
     }
