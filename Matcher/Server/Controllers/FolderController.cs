@@ -8,7 +8,7 @@ namespace Matcher.Server.Controllers;
 [Route("/api/folder")]
 public class FolderController : EntityController<FolderService, Folder>
 {
-    public FolderController(GameService entityService) : base(entityService)
+    public FolderController(FolderService entityService) : base(entityService)
     {
     }
 }

@@ -31,22 +31,46 @@
                             <input class="form-control" type="text" autocomplete="on" id="card-name"
                                    @bind-value="SignUpModel.GameName"/>
                         </div>
+                        
+                        
+                        
+                        <div class="mb-3">
+                            <label class="form-label" for="card-name">Folder of the game: </label>
+                            <label class="form-label" for="card-name">@_currentFolderPath</label>
+                            
+                        </div>
 
                         <div class="mb-3">
                             <label class="form-label" for="card-name">Select folder name</label>
-                        <InputSelect @bind-Value="SignUpModel.Folder">
-                                @foreach (var folder in _folders.Where(f => f.ParentFolder is null))
+                            <InputSelect @bind-Value="SignUpModel.Folder" @onchange="@SetCurrentFolder">
+
+                                @if (_currentFolder is not null)
                                 {
-                                    <option value="@folder.Id">@folder.Name</option>
-
-                                    
-
-                                 
-
+                                    @if (_currentFolder.ParentFolder is null)
+                                    {
+                                        @foreach (var folder in _folders.Where(f => f.ParentFolder is null))
+                                        {
+                                            <option value="@folder">@folder.Name</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @foreach (var folder in _folders.Where(f => f.ParentFolder.Id == _currentFolder.Id))
+                                        {
+                                            <option value="@folder">@folder.Name</option>
+                                        }
+                                    }
                                 }
-                        </InputSelect>
+
+                            </InputSelect>
                         </div>
                         
+                        <div class="mb-3">
+                            <input class="form-control" type="text" autocomplete="on" id="card-name" @bind-value="_newFolderName"/>
+                            
+                            <button class="btn btn-primary d-block w-100 mt-3" type="button" @onclick="CreateNewFolderAsync">Create new game folder</button>
+                        </div>
+
 
                         <div class="mb-3">
                             <label class="form-label">Import file:  </label>
@@ -101,15 +125,19 @@
 
 @code 
 {
-    public const int MaxGroups = 700;
+        public const int MaxGroups = 700;
         public const int MaxItemsInOneGroup = 20;
         private const int MaxItemCharacters = 200;
         private const char Separator = ',';
 
     [Parameter]
     public SignUpModel SignUpModel { get; set; } = new();
-    
+
     private string _fileContent;
+
+    private Folder _currentFolder;
+
+    private string _currentFolderPath;
 
     private bool _importFileIsOk = false;
 
@@ -119,16 +147,24 @@
 
     private List<Folder> _subFolders;
 
-    
+    private string _newFolderName;
+
+
+
+
     protected override async Task OnParametersSetAsync()
     {
         _folders = await _folderService.ListAsync();
 
         _subFolders = _folders.Where(f => f.ParentFolder is null).ToList();
 
+        _currentFolder = _folders.FirstOrDefault(f => f.Name == "root");
+
+        _currentFolderPath = GetFolderPath(_currentFolder);
+
     }
 
-    private async Task LoadLines(InputFileChangeEventArgs e) 
+    private async Task LoadLines(InputFileChangeEventArgs e)
     {
         try
         {
@@ -155,21 +191,21 @@
 
             if (user is null)
             {
-                user = new User { Nick = SignUpModel.NickName, Email = SignUpModel.Email};
+                user = new User {Nick = SignUpModel.NickName, Email = SignUpModel.Email};
                 user = await _userService.PutAsync(user);
             }
-            
-            var game = new Game { Name = SignUpModel.GameName, User = user, Password = SignUpModel.Password, Chemical=SignUpModel.Chemical};
+
+            var game = new Game {Name = SignUpModel.GameName, User = user, Password = SignUpModel.Password, Chemical = SignUpModel.Chemical};
             game = await _gameService.PutAsync(game);
 
             foreach (var line in _lines)
             {
-                var group = new Group { Game = game };
+                var group = new Group {Game = game};
                 group = await _groupService.PutAsync(group);
-               
+
                 var items = line.Split(Separator).ToList();
 
-                foreach (var itemCreated in items.Select(item => new Item { Value = item, Group = group }))
+                foreach (var itemCreated in items.Select(item => new Item {Value = item, Group = group}))
                 {
                     await _itemService.PutAsync(itemCreated);
                 }
@@ -192,15 +228,15 @@
             _alertService.Add(AlertType.Error, "Import file is wrong.");
             return false;
         }
-        
+
         if (_lines is null)
         {
             _alertService.Add(AlertType.Error, "Import file is wrong.");
             return false;
         }
-        
-        var game =  (await _gameService.ListAsync(g => g.Name == SignUpModel.GameName )).FirstOrDefault();
-            
+
+        var game = (await _gameService.ListAsync(g => g.Name == SignUpModel.GameName)).FirstOrDefault();
+
         if (game is not null)
         {
             _alertService.Add(AlertType.Error, "This name of the game already exists.");
@@ -210,7 +246,7 @@
         return true;
     }
 
- 
+
     private List<string> ParseFileToLines(string content, out string reason)
     {
         _importFileIsOk = false;
@@ -250,18 +286,16 @@
         return _lines;
     }
 
-    private List<Folder> GetSubFolders(Folder folder)
+    private void SetCurrentFolder(ChangeEventArgs e)
     {
-        List<Folder> subFolders = new();
+        _currentFolder = (Folder) e.Value;
+        
+        _currentFolderPath = GetFolderPath(_currentFolder);
 
-        foreach (var subFolder in _folders.Where(f => f.ParentFolder.Id == folder.Id))
-        {
-            subFolders.Add(subFolder);
-        }
-
-        return subFolders;
+        StateHasChanged();
     }
 
+    
     private static bool IsUnique(IEnumerable<string> lines, out string duplicateValue)
     {
         duplicateValue = string.Empty;
@@ -269,24 +303,71 @@
         var items = new List<Item>();
 
         var groupId = 0;
-        
+
 
         foreach (var line in lines)
         {
             groupId++;
 
-            var group = new Group { Id= groupId, Game = new Game { Name = "GameUnderImport", User = new User { Email="e" }, Password = "p" } };
-            
+            var group = new Group {Id = groupId, Game = new Game {Name = "GameUnderImport", User = new User {Email = "e"}, Password = "p"}};
+
             var rawItems = line.Split(Separator).ToList();
 
             items.AddRange(rawItems.Select(item => new Item {Value = item, Group = group}));
         }
-        
-        foreach (var item in from item in items let reducedItems = items.Where(i => i.Group.Id != item.Group.Id) where reducedItems.Any(i => i.Value == item.Value) select item)
+
+        foreach (var item in from item in items
+            let reducedItems = items.Where(i => i.Group.Id != item.Group.Id)
+            where reducedItems.Any(i => i.Value == item.Value)
+            select item)
         {
             duplicateValue = item.Value;
             return false;
         }
         return true;
+
     }
-} 
+
+    private static string GetFolderPath(Folder folder)
+    {
+        var path = folder.Name;
+
+        while (folder.ParentFolder is not null)
+        {
+            path = GetFolderPath(folder.ParentFolder) + "/" + path;
+        }
+
+        return path;
+    }
+
+    private async Task CreateNewFolderAsync()
+    {
+        if (FolderNameIsUnique(_newFolderName))
+        {
+            var folder = new Folder()
+            {
+                Name = _newFolderName,
+                ParentFolder = _currentFolder
+            };
+
+            await _folderService.PutAsync(folder);
+
+            _folders = await _folderService.ListAsync();
+            
+            folder = _folders.FirstOrDefault(f => f.Name == _newFolderName && Equals(f.ParentFolder, _currentFolder));
+            
+            _currentFolder = folder;
+
+            StateHasChanged();
+        }
+        else
+        {
+            _alertService.Add(AlertType.Error, $"Folder name <{_newFolderName}> already exists.");
+        }
+    }
+
+    private bool FolderNameIsUnique(string name)
+    {
+        return _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id).All(sf => sf.Name != _newFolderName);
+    }
+}
