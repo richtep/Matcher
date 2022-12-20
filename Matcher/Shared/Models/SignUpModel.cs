@@ -15,7 +15,7 @@ public class SignUpModel
     public string Password { get; set; }
 
     [Required]
-    public Folder Folder { get; set; }
+    public long FolderId { get; set; }
 
     [CompareProperty("Password", ErrorMessage = "Passwords must be the same.")]
     public string Confirm { get; set; }

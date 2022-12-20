@@ -20,6 +20,28 @@
 
 <br/><br/>
 
+
+
+            <div class="mb-3">
+                <label class="form-label" for="card-name">Folder of the game: </label>
+                <label class="form-label" for="card-name">@_currentFolderPath</label>
+                                        
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="card-name">Select folder name</label>
+                <Select   @oninput="@SetCurrentFolder">
+                    @if (_currentFolder is not null)
+                    {
+                        @foreach (var folder in _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id))
+                        {
+                            <option value="@folder.Id">@folder.Name</option>
+                        }
+                    }
+                </Select>
+            </div>
+
+
 <EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
                         <DataAnnotationsValidator />
                         <div class="mt-2">
@@ -34,36 +56,7 @@
                         
                         
                         
-                        <div class="mb-3">
-                            <label class="form-label" for="card-name">Folder of the game: </label>
-                            <label class="form-label" for="card-name">@_currentFolderPath</label>
-                            
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label" for="card-name">Select folder name</label>
-                            <InputSelect @bind-Value="SignUpModel.Folder" @onchange="@SetCurrentFolder">
-
-                                @if (_currentFolder is not null)
-                                {
-                                    @if (_currentFolder.ParentFolder is null)
-                                    {
-                                        @foreach (var folder in _folders.Where(f => f.ParentFolder is null))
-                                        {
-                                            <option value="@folder">@folder.Name</option>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        @foreach (var folder in _folders.Where(f => f.ParentFolder.Id == _currentFolder.Id))
-                                        {
-                                            <option value="@folder">@folder.Name</option>
-                                        }
-                                    }
-                                }
-
-                            </InputSelect>
-                        </div>
+                       
                         
                         <div class="mb-3">
                             <input class="form-control" type="text" autocomplete="on" id="card-name" @bind-value="_newFolderName"/>
@@ -288,8 +281,10 @@
 
     private void SetCurrentFolder(ChangeEventArgs e)
     {
-        _currentFolder = (Folder) e.Value;
-        
+        var folderId = long.Parse(e.Value.ToString());
+
+        _currentFolder =  _folders.FirstOrDefault(f => f.Id == folderId);
+    
         _currentFolderPath = GetFolderPath(_currentFolder);
 
         StateHasChanged();
@@ -334,7 +329,8 @@
 
         while (folder.ParentFolder is not null)
         {
-            path = GetFolderPath(folder.ParentFolder) + "/" + path;
+            folder = folder.ParentFolder;
+            path = GetFolderPath(folder) + "/" + path;
         }
 
         return path;
