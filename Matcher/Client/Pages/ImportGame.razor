@@ -20,26 +20,36 @@
 
 <br/><br/>
 
+<div class="mb-3">
+    <label class="form-label" for="card-name">Folder of the game: </label>
+    <label class="form-label" for="card-name">@_currentFolderPath</label>
+                            
+</div>
+
+<div class="mb-3">
+    <label class="form-label" for="card-name">Select folder name</label>
+    
+    <button @onclick="@GoUpperFolder"> .. </button>
+
+    <Select @oninput="@SetCurrentFolder">
+        @if (_currentFolder is not null)
+        {
+            <option value="0"> .. </option>
+
+            @foreach (var folder in _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id))
+            {
+                <option value="@folder.Id">@folder.Name</option>
+            }
+        }
+    </Select>
+</div>
 
 
-            <div class="mb-3">
-                <label class="form-label" for="card-name">Folder of the game: </label>
-                <label class="form-label" for="card-name">@_currentFolderPath</label>
-                                        
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label" for="card-name">Select folder name</label>
-                <Select   @oninput="@SetCurrentFolder">
-                    @if (_currentFolder is not null)
-                    {
-                        @foreach (var folder in _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id))
-                        {
-                            <option value="@folder.Id">@folder.Name</option>
-                        }
-                    }
-                </Select>
-            </div>
+<div class="mb-3">
+    <input class="form-control" type="text" autocomplete="on" id="card-name" @bind-value="_newFolderName"/>
+                            
+    <button class="btn btn-primary d-block w-100 mt-3" type="button" @onclick="CreateNewFolderAsync">Create new game folder</button>
+</div>
 
 
 <EditForm autocomplete="on" Model="@SignUpModel" OnValidSubmit="@OnSubmit">
@@ -55,16 +65,6 @@
                         </div>
                         
                         
-                        
-                       
-                        
-                        <div class="mb-3">
-                            <input class="form-control" type="text" autocomplete="on" id="card-name" @bind-value="_newFolderName"/>
-                            
-                            <button class="btn btn-primary d-block w-100 mt-3" type="button" @onclick="CreateNewFolderAsync">Create new game folder</button>
-                        </div>
-
-
                         <div class="mb-3">
                             <label class="form-label">Import file:  </label>
                             <label class="form-label" style="margin:16px;"> <InputFile OnChange="@LoadLines"/> </label>
@@ -283,13 +283,21 @@
     {
         var folderId = long.Parse(e.Value.ToString());
 
-        _currentFolder =  _folders.FirstOrDefault(f => f.Id == folderId);
-    
+        _currentFolder = folderId == 0 ? _currentFolder.ParentFolder : _folders.FirstOrDefault(f => f.Id == folderId);
+
         _currentFolderPath = GetFolderPath(_currentFolder);
 
         StateHasChanged();
     }
 
+    private void GoUpperFolder()
+    {
+        _currentFolder = _currentFolder.ParentFolder;
+
+        _currentFolderPath = GetFolderPath(_currentFolder);
+
+        StateHasChanged();
+    }
     
     private static bool IsUnique(IEnumerable<string> lines, out string duplicateValue)
     {
@@ -353,6 +361,10 @@
             folder = _folders.FirstOrDefault(f => f.Name == _newFolderName && Equals(f.ParentFolder, _currentFolder));
             
             _currentFolder = folder;
+
+            _currentFolderPath = GetFolderPath(_currentFolder);
+
+            _newFolderName = string.Empty;
 
             StateHasChanged();
         }
