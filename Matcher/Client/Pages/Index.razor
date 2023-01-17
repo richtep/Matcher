@@ -14,26 +14,21 @@
 <PageTitle>Game list</PageTitle>
 
 <div class="mb-3">
-    <label class="form-label">Current folder: </label>
-    <label class="form-label">@_currentFolderPath</label>
+    <label class="form-label"><b>@_currentFolderPath</b></label>
 </div>
 
 <div class="mb-3">
-    <button @onclick="@GoUpperFolder" > Parent folder .. </button>
+    <button @onclick="@GoUpperFolder" > &lt;&lt;&lt; </button>
+    &nbsp;&nbsp;&nbsp;
     
-    <label class="form-label">Subfolders:</label>
-
-    <Select @oninput="@SetCurrentFolder">
-        @if (_currentFolder is not null)
+    @if (_currentFolder is not null)
+    {
+        @foreach (var folder in _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id))
         {
-            <option value="0" checked> - </option>
-
-            @foreach (var folder in _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id))
-            {
-                <option value="@folder.Id">@folder.Name</option>
-            }
+            <button @onclick="() => SetCurrentFolderByButton(folder.Id)" >@folder.Name</button>
+            <span>&nbsp;</span>
         }
-    </Select>
+    }
 </div>
 
 <h1>Game list</h1>
@@ -77,7 +72,7 @@
 
         _folders = await _folderService.ListAsync();
 
-        _currentFolder = _folders.FirstOrDefault(f => f.Name == "root");
+        _currentFolder = _folders.FirstOrDefault(f => f.Name == "Chemie");
 
         _currentFolderPath = GetFolderPath(_currentFolder);
     }
@@ -88,10 +83,9 @@
         await _redirectService.RedirectToAsync($"/current-game/{game.Id}");
     }
     
-    private void SetCurrentFolder(ChangeEventArgs e)
+    
+    private void SetCurrentFolderByButton(long folderId)
     {
-        var folderId = long.Parse(e.Value.ToString());
-
         _currentFolder = folderId == 0 ? _currentFolder : _folders.FirstOrDefault(f => f.Id == folderId);
 
         _currentFolderPath = GetFolderPath(_currentFolder);
