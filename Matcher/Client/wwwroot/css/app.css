@@ -12,6 +12,13 @@ a, .btn-link {
     color: #0071c1;
 }
 
+.unstyled-button {
+    border: none;
+    padding: 0;
+    background: none;
+    color: red;
+}
+
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;

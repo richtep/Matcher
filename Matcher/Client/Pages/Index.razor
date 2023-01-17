@@ -4,6 +4,7 @@
 @using Matcher.Shared.Domain;
 
 @inject GameService _gameService;
+@inject FolderService _folderService;
 @inject GroupService _groupService;
 @inject ItemService _itemService;
 @inject UserService _userService;
@@ -12,8 +13,30 @@
 
 <PageTitle>Game list</PageTitle>
 
-<h1>Game list</h1>
+<div class="mb-3">
+    <label class="form-label">Current folder: </label>
+    <label class="form-label">@_currentFolderPath</label>
+</div>
 
+<div class="mb-3">
+    <button @onclick="@GoUpperFolder" > Parent folder .. </button>
+    
+    <label class="form-label">Subfolders:</label>
+
+    <Select @oninput="@SetCurrentFolder">
+        @if (_currentFolder is not null)
+        {
+            <option value="0" checked> - </option>
+
+            @foreach (var folder in _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id))
+            {
+                <option value="@folder.Id">@folder.Name</option>
+            }
+        }
+    </Select>
+</div>
+
+<h1>Game list</h1>
 
  @if(_games != null )
  {
@@ -23,7 +46,7 @@
             <th>Author</th>
         </tr>
 
-         @foreach(var game in _games) 
+         @foreach(var game in _games.Where(g => g.Folder?.Id == _currentFolder.Id))
             {
                 <tr @onclick="() => StartGame(game)">
                     <td>@game.Name</td>
@@ -40,15 +63,72 @@
 
     private List<Game> _games;
 
+    private List<Folder> _folders;
+
+    private Folder _currentFolder;
+
+    private string _currentFolderPath;
+
     protected override async Task OnParametersSetAsync()
     {
         _games = await _gameService.ListAsync();
+
         _games = _games.OrderBy(g => g.Name).ToList();
+
+        _folders = await _folderService.ListAsync();
+
+        _currentFolder = _folders.FirstOrDefault(f => f.Name == "root");
+
+        _currentFolderPath = GetFolderPath(_currentFolder);
     }
 
     private async Task StartGame(Game game) 
     {
         CurrentGame = game;
         await _redirectService.RedirectToAsync($"/current-game/{game.Id}");
+    }
+    
+    private void SetCurrentFolder(ChangeEventArgs e)
+    {
+        var folderId = long.Parse(e.Value.ToString());
+
+        _currentFolder = folderId == 0 ? _currentFolder : _folders.FirstOrDefault(f => f.Id == folderId);
+
+        _currentFolderPath = GetFolderPath(_currentFolder);
+
+        StateHasChanged();
+    }
+
+    private void GoUpperFolder()
+    {
+
+        if (_currentFolder.ParentFolder is null) return;
+
+        _currentFolder = _currentFolder.ParentFolder;
+
+        _currentFolderPath = GetFolderPath(_currentFolder);
+
+        StateHasChanged();
+    }
+
+    private static string GetFolderPath(Folder folder)
+    {
+        var path = folder.Name;
+
+        var parentFolderNames = GetParentFolderNames(folder);
+
+        return parentFolderNames.Aggregate(path, (current, parentFolderName) => parentFolderName + "/" + current);
+    }
+    private static List<string> GetParentFolderNames(Folder folder)
+    {
+        List<string> folderNames = new();
+
+        while (folder.ParentFolder is not null)
+        {
+            folder = folder.ParentFolder;
+            folderNames.Add(folder.Name);
+        }
+        
+        return folderNames;
     }
 }

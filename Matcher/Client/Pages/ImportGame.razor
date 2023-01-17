@@ -21,20 +21,22 @@
 <br/><br/>
 
 <div class="mb-3">
-    <label class="form-label" for="card-name">Folder of the game: </label>
-    <label class="form-label" for="card-name">@_currentFolderPath</label>
+    <label class="form-label">Current folder: </label>
+    <label class="form-label">@_currentFolderPath
+        <button @onclick="@DeleteCurrentFolderAsync">Delete current folder</button>
+    </label>
                             
 </div>
 
 <div class="mb-3">
-    <label class="form-label" for="card-name">Select folder name</label>
+    <label class="form-label">Select folder name</label>
     
     <button @onclick="@GoUpperFolder"> .. </button>
 
     <Select @oninput="@SetCurrentFolder">
         @if (_currentFolder is not null)
         {
-            <option value="0"> .. </option>
+            <option value="0" checked> - </option>
 
             @foreach (var folder in _folders.Where(f => f.ParentFolder?.Id == _currentFolder.Id))
             {
@@ -46,8 +48,7 @@
 
 
 <div class="mb-3">
-    <input class="form-control" type="text" autocomplete="on" id="card-name" @bind-value="_newFolderName"/>
-                            
+    <input class="form-control" type="text" autocomplete="on" @bind-value="_newFolderName"/>
     <button class="btn btn-primary d-block w-100 mt-3" type="button" @onclick="CreateNewFolderAsync">Create new game folder</button>
 </div>
 
@@ -59,9 +60,9 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label" for="card-name">Name of the game</label>
-                            <input class="form-control" type="text" autocomplete="on" id="card-name"
-                                   @bind-value="SignUpModel.GameName"/>
+                            <label class="form-label">Name of the game
+                                <input class="form-control" type="text" autocomplete="on" @bind-value="SignUpModel.GameName"/>
+                            </label>
                         </div>
                         
                         
@@ -71,47 +72,46 @@
                         </div>
                         
                         <div class="mb-3">
-                        <label class="form-label" for="card-name">Verify that out-of-group items are unique</label>
-                            <input  type="checkbox" checked @bind-value="SignUpModel.Unique"/>
+                            <label class="form-label">Verify that out-of-group items are unique
+                                <input type="checkbox" checked @bind-value="SignUpModel.Unique"/>
+                            </label>
                         </div>
 
                         <div class="mb-3">
-                        <label class="form-label" for="card-name">Chemical formulas</label>
-                            <input  type="checkbox"  @bind-value="SignUpModel.Chemical"/>
-                        </div>
-
-                        
-                        <div class="mb-3">
-                            <label class="form-label" for="card-name">Author</label>
-                            <input class="form-control" type="text" autocomplete="on" id="card-name"
-                                @bind-value="SignUpModel.NickName" />
+                            <label class="form-label">Chemical formulas
+                                <input type="checkbox" @bind-value="SignUpModel.Chemical"/>
+                            </label>
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label" for="card-email">Contact email address</label>
-                            <input class="form-control" type="email" autocomplete="on"
-                                   id="card-email" @bind-value="SignUpModel.Email" />
+                            <label class="form-label">Author
+                                <input class="form-control" type="text" autocomplete="on" @bind-value="SignUpModel.NickName" />
+                            </label>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Contact email address
+                                <input class="form-control" type="email" autocomplete="on" @bind-value="SignUpModel.Email" />
+                            </label>
+                            
                         </div>
                         
                         <div class="row gx-2">
                             <div class="mb-3 col-sm-6">
-                                <label class="form-label" for="card-password">Password</label>
-                                <input class="form-control" type="password" autocomplete="on"
-                                    id="card-password"
-                                    @bind-value="SignUpModel.Password" />
+                                <label class="form-label">Password
+                                    <input class="form-control" type="password" autocomplete="on" @bind-value="SignUpModel.Password" />
+                                </label>
                             </div>
+
                             <div class="mb-3 col-sm-6">
-                                <label class="form-label" for="card-confirm-password">Confirm
-                                    Password</label>
-                                <input class="form-control" type="password" autocomplete="on"
-                                    id="card-confirm-password"
-                                    @bind-value="SignUpModel.Confirm" />
+                                <label class="form-label">Confirm Password
+                                    <input class="form-control" type="password" autocomplete="on" @bind-value="SignUpModel.Confirm" />
+                                </label>
                             </div>
                         </div>
                         
                         <div class="mb-3">
-                            <button class="btn btn-primary d-block w-100 mt-3" type="submit"
-                                name="submit">Create new game</button>
+                            <button class="btn btn-primary d-block w-100 mt-3" type="submit" name="submit">Create new game</button>
                         </div>
                     </EditForm>
 
@@ -138,7 +138,7 @@
 
     private List<Folder> _folders;
 
-    private List<Folder> _subFolders;
+    private List<Game> _games;
 
     private string _newFolderName;
 
@@ -149,12 +149,11 @@
     {
         _folders = await _folderService.ListAsync();
 
-        _subFolders = _folders.Where(f => f.ParentFolder is null).ToList();
-
+        _games = await _gameService.ListAsync();
+        
         _currentFolder = _folders.FirstOrDefault(f => f.Name == "root");
 
         _currentFolderPath = GetFolderPath(_currentFolder);
-
     }
 
     private async Task LoadLines(InputFileChangeEventArgs e)
@@ -188,7 +187,7 @@
                 user = await _userService.PutAsync(user);
             }
 
-            var game = new Game {Name = SignUpModel.GameName, User = user, Password = SignUpModel.Password, Chemical = SignUpModel.Chemical};
+            var game = new Game {Name = SignUpModel.GameName, User = user, Password = SignUpModel.Password, Chemical = SignUpModel.Chemical, Folder = _currentFolder};
             game = await _gameService.PutAsync(game);
 
             foreach (var line in _lines)
@@ -283,11 +282,50 @@
     {
         var folderId = long.Parse(e.Value.ToString());
 
-        _currentFolder = folderId == 0 ? _currentFolder.ParentFolder : _folders.FirstOrDefault(f => f.Id == folderId);
+        _currentFolder = folderId == 0 ? _currentFolder : _folders.FirstOrDefault(f => f.Id == folderId);
 
         _currentFolderPath = GetFolderPath(_currentFolder);
 
         StateHasChanged();
+    }
+
+    private async Task DeleteCurrentFolderAsync()
+    {
+        var folderToBeDeleted = _currentFolder;
+
+        if (_currentFolder.ParentFolder is null)
+        {
+            _alertService.Add(AlertType.Error, "Root folder cannot be deleted.");
+            return;
+        }
+        
+        if (FolderIsEmpty(folderToBeDeleted))
+        {
+            _currentFolder = _currentFolder.ParentFolder;
+
+            await _folderService.DeleteAsync(folderToBeDeleted);
+            
+            _alertService.Add(AlertType.Success, $"Folder '{folderToBeDeleted.Name}' was deleted.");
+
+            _currentFolderPath = GetFolderPath(_currentFolder);
+
+            _folders = await _folderService.ListAsync();
+
+            StateHasChanged();
+        }
+        else
+        {
+            _alertService.Add(AlertType.Error, "Folder is not empty.");
+        }
+    }
+
+    private bool FolderIsEmpty(Folder folder)
+    {
+        var gamesInFolderExist = _games.Any(g => g.Folder?.Id == folder.Id);
+
+        var subFoldersInFolderExist = _folders.Any(f => f.ParentFolder?.Id == folder.Id);
+
+        return !subFoldersInFolderExist && !gamesInFolderExist;
     }
 
     private void GoUpperFolder()
@@ -335,17 +373,35 @@
     {
         var path = folder.Name;
 
+        var parentFolderNames = GetParentFolderNames(folder);
+
+        return parentFolderNames.Aggregate(path, (current, parentFolderName) => parentFolderName + "/" + current);
+    }
+
+
+    private static List<string> GetParentFolderNames(Folder folder)
+    {
+        List<string> folderNames = new();
+
         while (folder.ParentFolder is not null)
         {
             folder = folder.ParentFolder;
-            path = GetFolderPath(folder) + "/" + path;
+            folderNames.Add(folder.Name);
         }
-
-        return path;
+        
+        return folderNames;
     }
+
 
     private async Task CreateNewFolderAsync()
     {
+        if (_newFolderName is null || _newFolderName == string.Empty)
+        {
+            _alertService.Add(AlertType.Error,"New folder name is empty.");
+
+            return;
+        }
+
         if (FolderNameIsUnique(_newFolderName))
         {
             var folder = new Folder()
@@ -363,14 +419,16 @@
             _currentFolder = folder;
 
             _currentFolderPath = GetFolderPath(_currentFolder);
+            
+            StateHasChanged();
+
+            _alertService.Add(AlertType.Success,$"New folder '{_newFolderName}' was created.");
 
             _newFolderName = string.Empty;
-
-            StateHasChanged();
         }
         else
         {
-            _alertService.Add(AlertType.Error, $"Folder name <{_newFolderName}> already exists.");
+            _alertService.Add(AlertType.Error, $"Folder name '{_newFolderName}' already exists.");
         }
     }
 
