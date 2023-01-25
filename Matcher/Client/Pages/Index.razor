@@ -66,15 +66,23 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        _games = await _gameService.ListAsync();
+        try
+        {
+            _games = await _gameService.ListAsync();
 
-        _games = _games.OrderBy(g => g.Name).ToList();
+            _games = _games.OrderBy(g => g.Name).ToList();
 
-        _folders = await _folderService.ListAsync();
+            _folders = await _folderService.ListAsync();
 
-        _currentFolder = _folders.FirstOrDefault(f => f.Name == "Chemie");
+            _currentFolder = _folders.FirstOrDefault(f => f.Name == "Chemie");
 
-        _currentFolderPath = GetFolderPath(_currentFolder);
+            _currentFolderPath = GetFolderPath(_currentFolder);
+        }
+        catch (Exception e)
+        {
+            _alertService.Add(AlertType.Error, "Database not connected. Check the internet." );
+        }
+        
     }
 
     private async Task StartGame(Game game) 
