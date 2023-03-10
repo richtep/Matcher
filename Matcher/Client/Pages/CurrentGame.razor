@@ -163,6 +163,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (Id == 0) return;
+
         _game ??= (await GameService.ListAsync(g => g.Id == Id)).SingleOrDefault();
     
         var guid = await ItemService.QueryAsync();
