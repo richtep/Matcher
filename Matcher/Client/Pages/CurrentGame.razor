@@ -176,7 +176,7 @@
         };
 
         _gameItems = (await ItemService.ListAsync(guid, query)).Page;
-        
+       
         _groups = await GroupService.ListAsync(g => g.Game.Id == _game.Id);
 
         _groups.ForEach(g => g.Checked = true);
@@ -187,10 +187,6 @@
     private void InitializeNewGame()
     {
         var groups = MixItems<Group>(_groups);
-
-        var rounds = _groups.Count / _maxGroups;
-
-        if (_groups.Count % _maxGroups > 0) rounds++;
         
         var items = _gameItems.Where(i => groups.Any(g => g.Id == i.Group.Id)).ToList();
 
@@ -216,8 +212,7 @@
 
             groupIndex++;
         }
-
-
+        
         _gameStatusItems = MixItems<ItemStatusModel>(_gameStatusItems);
 
         _startTime = DateTime.Now;
