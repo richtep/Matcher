@@ -8,17 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-//temp for local
-//builder.Services.AddEntitySystemServerFluent<ItemService, Item>(PostgreSQLConfiguration.Standard.ConnectionString("server=130.162.216.255;Port=8083;Database=dbMatcher;User Id=admin;Password=Veverka378378;MaxPoolSize=100;Timeout=15;CommandTimeout=300").Dialect<PostgreSQL83Dialect>());
-
-
 //production 
 builder.Services.AddEntitySystemServerFluent<ItemService, Item>(PostgreSQLConfiguration.Standard.ConnectionString("server=Database;Port=5432;Database=dbMatcher;User Id=admin;Password=Veverka378378;MaxPoolSize=100;Timeout=15;CommandTimeout=300").Dialect<PostgreSQL83Dialect>());
-
-
-/*builder.Services.AddEntitySystemServerFluent<ItemService, Item>
-(i => i.EnsureExist(Group.Reference, g => g.Name));
-*/
 
 // Add services to the container.
 
